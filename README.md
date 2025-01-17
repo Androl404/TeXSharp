@@ -2,7 +2,7 @@
 
 TeXSharp (TeX#) est un éditeur de LaTeX, écrit en C# avec la librairie GTK, écrit dans un objectif éducatif pour découvrir le langage C#.
 
-![Logo de TeXSharp](https://raw.githubusercontent.com/Androl404/TeXSharp/refs/heads/main/assets/logo/logo_dark_fg.png)
+![Logo de TeXSharp](https://raw.githubusercontent.com/Androl404/TeXSharp/refs/heads/main/assets/logo/logo_dark_fg_stroke.png)
 
 # Dépendances
 
