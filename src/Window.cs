@@ -73,22 +73,28 @@ class Window {
     public Gtk.ScrolledWindow MakePDFViewer() {
         // TODO: Compatibily with Window is broke here (due to the paths being hardcoded)
         // Load the PDF file into IronPdf
-        var pdf = new IronPdf.PdfDocument("./assets/pdf_test2.pdf");
+        IronPdf.PdfDocument pdf = new IronPdf.PdfDocument("./assets/pdf_test.pdf");
 
         // Render the PDF as images in temp folder
-        pdf.RasterizeToImageFiles("/tmp/*.png");
+        pdf.RasterizeToImageFiles("/tmp/*.png", 2160, 3840, IronPdf.Imaging.ImageType.Png, 300);
 
-        // TODO: make a for loop with all the images created from the PDF
-        var imagePdf = Gtk.Image.NewFromFile("/tmp/1.png");
-        imagePdf.PixelSize = 500;
-        imagePdf.SetHexpand(true);
-        imagePdf.SetVexpand(true);
+        var image_box = Gtk.Box.New(Gtk.Orientation.Vertical, 0);
+
+        // TODO: Find another way to show images than converting them to images, it is not convenient
+        var imagePdf = Gtk.Image.New();
+        for (int i = 1; i <= pdf.PageCount; ++i) {
+            imagePdf = Gtk.Image.NewFromFile("/tmp/" + i + ".png");
+            imagePdf.PixelSize = 500;
+            imagePdf.SetHexpand(true);
+            imagePdf.SetVexpand(true);
+            image_box.Append(imagePdf);
+        }
 
         // We put the PDF images into a scrollable element
         var scrolledPdf = Gtk.ScrolledWindow.New();
         scrolledPdf.SetHexpand(true);
         scrolledPdf.SetVexpand(true);
-        scrolledPdf.SetChild(imagePdf);
+        scrolledPdf.SetChild(image_box);
         return scrolledPdf;
     }
 }
