@@ -29,7 +29,6 @@ class Window {
 
         var button = Gtk.MenuButton.New(); // We create a button
         button.SetHasFrame(false); // without a frame
-
         var button_icon = Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("open-menu-symbolic")); // We create an image with an icon
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         button.SetChild(button_icon); // We set the icon as child of the button (the child will be contained in the button)
@@ -37,7 +36,7 @@ class Window {
         var pop = Gtk.Popover.New(); // New popover menu
         var box = Gtk.Box.New(Gtk.Orientation.Vertical, 0); // New box to put in the popover menu
         var button_about = Gtk.Button.New(); // Button to put in the box
-        button_about.SetLabel("À propos"); // Label of the button
+        button_about.SetLabel(Globals.lan.ServeTrad("about")); // Label of the button
         button_about.SetHasFrame(false); // Without frame
         button_about.OnClicked += (sender, args) => {
             // TODO: Create the About window
@@ -62,7 +61,7 @@ class Window {
         var textView = Gtk.TextView.New();
         // If you want to control whether it's editable:
         textView.Editable = true; // or false to make it read-only
-        textView.Buffer.Text = "Hello, World!";
+        textView.Buffer.Text = Globals.lan.ServeTrad("hello_world");
 
         // Add TextView to ScrolledWindow
         scrolled.SetChild(textView);

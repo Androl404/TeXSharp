@@ -4,10 +4,16 @@ using Gio;
 
 class Program {
     public static int Main(string[] args) {
+        // var lan = new Languages("./assets/languages.sqlite", "fr");
+
         var application = Gtk.Application.New("com.github.TeXSharp", Gio.ApplicationFlags.FlagsNone);
         application.OnActivate += (sender, args) => {
+            // var dialog = new AboutDialog.SampleAboutDialog("Custom AboutDialog");
+            // dialog.Application = (Gtk.Application) sender;
+            // dialog.Show();
+
             // Create main Window
-            var window = new Window("TeXSharp - A modern LaTeX editor", 800, 600, sender);
+            var window = new Window($"TeXSharp - {Globals.lan.ServeTrad("modern_latex_editor")}", 800, 600, sender);
             window.SetHeaderBar();
 
             var text_editor = window.MakeTextEditor();
@@ -15,10 +21,10 @@ class Program {
 
             // Create some other elements for example
             var button1 = Gtk.Button.New();
-            button1.Label = "Save";
+            button1.Label = Globals.lan.ServeTrad("save");
             var button2 = Gtk.Button.New();
-            button2.Label = "Load";
-            var label = Gtk.Label.New("Editor:");
+            button2.Label = Globals.lan.ServeTrad("load");
+            var label = Gtk.Label.New(Globals.lan.ServeTrad("editor"));
 
             // Create Grid
             var grid = Gtk.Grid.New();
@@ -43,7 +49,6 @@ class Program {
 
             // Set the grid as the window's child
             window._Window.SetChild(grid);
-
         };
 
         return application.RunWithSynchronizationContext(null);
