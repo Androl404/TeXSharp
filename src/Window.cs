@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using Gtk;
 using Gio;
 using IronPdf;
@@ -6,8 +7,7 @@ using IronPdf;
 class Window {
     private Gtk.ApplicationWindow window; // The main window
     private Gio.Application sender;
-    public Gtk.ApplicationWindow _Window // Public property used to access the window attribute in read-only
-        {
+    public Gtk.ApplicationWindow _Window { // Public property used to access the window attribute in read-only
         get { return this.window; } // get method
     }
 
@@ -73,11 +73,16 @@ class Window {
     }
 
     public Gtk.ScrolledWindow MakePDFViewer() {
-        // TODO: Compatibily with Window is broke here (due to the paths being hardcoded) Load the PDF file into IronPdf
         IronPdf.PdfDocument pdf = new IronPdf.PdfDocument("./assets/pdf_test.pdf");
 
+        string path = "";
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            path = Environment.ExpandEnvironmentVariables("%temp%/");
+        } else { // Unix-based OS
+            path = "/tmp/";
+        }
         // Render the PDF as images in temp folder
-        pdf.RasterizeToImageFiles("/tmp/*.png", 2160, 3840, IronPdf.Imaging.ImageType.Png, 300);
+        pdf.RasterizeToImageFiles($"{path}*.png", 2160, 3840, IronPdf.Imaging.ImageType.Png, 300);
 
         var image_box = Gtk.Box.New(Gtk.Orientation.Vertical, 0);
 
@@ -85,12 +90,11 @@ class Window {
         // Usage of Gtk.Picture widget instead of Gtk.Image
         var imagePdf = Gtk.Picture.New();
         for (int i = 1; i <= pdf.PageCount; ++i) {
-
-            imagePdf = Gtk.Picture.NewForFilename("/tmp/" + i + ".png");
+            imagePdf = Gtk.Picture.NewForFilename(path + i + ".png");
             // Make the image fill the available space horizontally
             imagePdf.SetHexpand(true);
             imagePdf.SetContentFit(ContentFit.Fill);
-            // IMPORTANT : this need to be on 'false' or else, the scrolled window will not work
+            // IMPORTANT: this need to be on 'false' or else, the scrolled window will not work
             imagePdf.SetCanShrink(false);
             // Keep the aspect ratio of the image, which avoid the image to be stretched when resizing the window
             imagePdf.SetKeepAspectRatio(true);
