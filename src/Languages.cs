@@ -12,7 +12,6 @@ public class Languages {
         this.DBPath = DBPath;
         this.DBGetLanguage();
         this.DBGetTrad();
-        Console.WriteLine();
     }
 
     async private void DBGetLanguage() {
@@ -28,7 +27,7 @@ public class Languages {
             await conn.CloseAsync();
         } catch (Exception e) {
             // TODO: Make a graphical popup window in case of error
-            Console.WriteLine("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
+            throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
             // var diag = new Gtk.MessageDialog();
             // diag.Text = "Texte de secours";
             // diag.Show();
@@ -47,14 +46,14 @@ public class Languages {
             this.Traduction = new Dictionary<string, string>();
             if (!dataReader.HasRows) throw new System.IndexOutOfRangeException("Database response is empty");
             while (await dataReader.ReadAsync()) {
-                string mkey = Convert.ToString(dataReader["field"]);
+                string mkey = Convert.ToString(dataReader["field"]); // (string)
                 string mvalue = Convert.ToString(dataReader["traduction"]);
                 this.Traduction.Add(mkey, mvalue);
             }
             await conn.CloseAsync();
         } catch (Exception e) {
             // TODO: Make a graphical popup window in case of error
-            Console.WriteLine("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
+            throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
         }
     }
 

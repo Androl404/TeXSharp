@@ -42,7 +42,7 @@ class Window {
         button_about.SetLabel(Globals.lan.ServeTrad("about")); // Label of the button
         button_about.SetHasFrame(false);                       // Without frame
         button_about.OnClicked += (sender, args) => {
-            var dialog = new TAboutDialog.TAboutDialog("TeXSharp");
+            var dialog = new TAboutDialog("TeXSharp");
             dialog.Application = (Gtk.Application)this.sender; // CS0030: Impossible de convertir le type 'Gtk.Button' en 'Gtk.Application'
             dialog.Show();
         };

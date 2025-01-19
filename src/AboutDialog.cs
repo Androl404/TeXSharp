@@ -4,7 +4,7 @@ using GdkPixbuf;
 using GObject;
 
 // No need for a namespace
-namespace TAboutDialog;
+// namespace TAboutDialog;
 
 public class TAboutDialog : Gtk.AboutDialog {
     public TAboutDialog(string Name) {
