@@ -5,6 +5,7 @@ using IronPdf;
 
 class Window {
     private Gtk.ApplicationWindow window ; // The main window
+    private Gio.Application sender;
     public Gtk.ApplicationWindow _Window   // Public property used to access the window attribute in read-only
     {
         get { return this.window; }   // get method
@@ -17,6 +18,7 @@ class Window {
         this.window.Title = title; // Set the title
         this.window.SetDefaultSize(sizeX, sizeY); // Set the size (x, y)
         this.window.Show(); // Show the window (it's always better to see it)
+        this.sender = sender;
     }
 
     // To construct the header bar of the window
@@ -39,8 +41,9 @@ class Window {
         button_about.SetLabel(Globals.lan.ServeTrad("about")); // Label of the button
         button_about.SetHasFrame(false); // Without frame
         button_about.OnClicked += (sender, args) => {
-            // TODO: Create the About window
-            Console.WriteLine("About TeXSharp");
+            var dialog = new TAboutDialog.TAboutDialog("TeXSharp");
+            dialog.Application = (Gtk.Application)this.sender; // CS0030: Impossible de convertir le type 'Gtk.Button' en 'Gtk.Application'
+            dialog.Show();
         };
 
         // We then encapsulate our elements

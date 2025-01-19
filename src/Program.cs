@@ -4,14 +4,8 @@ using Gio;
 
 class Program {
     public static int Main(string[] args) {
-        // var lan = new Languages("./assets/languages.sqlite", "fr");
-
         var application = Gtk.Application.New("com.github.TeXSharp", Gio.ApplicationFlags.FlagsNone);
         application.OnActivate += (sender, args) => {
-            // var dialog = new AboutDialog.SampleAboutDialog("Custom AboutDialog");
-            // dialog.Application = (Gtk.Application) sender;
-            // dialog.Show();
-
             // Create main Window
             var window = new Window($"TeXSharp - {Globals.lan.ServeTrad("modern_latex_editor")}", 800, 600, sender);
             window.SetHeaderBar();
