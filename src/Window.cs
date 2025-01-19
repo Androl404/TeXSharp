@@ -84,7 +84,7 @@ class Window {
         // Render the PDF as images in temp folder
         pdf.RasterizeToImageFiles($"{path}*.png", 2160, 3840, IronPdf.Imaging.ImageType.Png, 300);
 
-        var image_box = Gtk.Box.New(Gtk.Orientation.Vertical, 0);
+        var image_box = Gtk.Box.New(Gtk.Orientation.Vertical, 5);
 
         // TODO: Find another way to show images than converting them to images, it is not convenient
         // Usage of Gtk.Picture widget instead of Gtk.Image
@@ -98,7 +98,6 @@ class Window {
             imagePdf.SetCanShrink(false);
             // Keep the aspect ratio of the image, which avoid the image to be stretched when resizing the window
             imagePdf.SetKeepAspectRatio(true);
-
             image_box.Append(imagePdf);
         }
 
