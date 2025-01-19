@@ -1,6 +1,9 @@
 # TeXSharp
 
-TeXSharp (TeX#) est un éditeur de LaTeX, écrit en C# avec la librairie GTK, écrit dans un objectif éducatif pour découvrir le langage C#.
+TeXSharp (TeX#) est un éditeur de LaTeX, écrit en C# avec la librairie GTK, conçu dans un objectif éducatif pour découvrir le langage C# et le monde de la programation événementielle.
+
+> [!WARNING]
+> TeXSharp est en cours de développement et il peut être instable. À utiliser à vos risques et périls.
 
 ![Logo de TeXSharp](https://raw.githubusercontent.com/Androl404/TeXSharp/refs/heads/main/assets/logo/logo_dark_fg_stoke.png)
 
@@ -28,19 +31,27 @@ $ pacman -Suy
 $ pacman -S mingw-w64-x86_64-gtk4
 ```
 
-Il existe sûrement d'autres moyens d'installer ces paquets, la méthode que nous proposons est la plus simple. Ajoutez ensuite `C:\msys64\mingw64\bin` dans le PATH en tant que premier élément.
+Il existe sûrement d'autres moyens d'installer ces paquets, la méthode que nous proposons ici est la plus simple. Ajoutez ensuite `C:\msys64\mingw64\bin` dans le PATH en tant que premier élément.
 
-Nous vous conseillons d'utiliser l'interface .NET en ligne de commande pour compiler le projet. Si vous souhaitez utiliser Visual Studio, nous ne documenterons pas cela ici.
+Nous vous conseillons d'utiliser l'interface .NET en ligne de commande pour travailler sur ce projet. Si vous souhaitez utiliser Visual Studio, nous ne documenterons pas cela ici. De plus, nous vous laisserons créer votre propre fichier de solution Visual.
 
 # Compiler localement
+
+Commencez par cloner le dépôt :
+
+```sh
+$ git clone https://github.com/Androl404/TeXSharp.git
+```
 
 Après avoir installé toutes les dépendances de ce projet :
 
 ```sh
-$ git clone https://github.com/Androl404/TeXSharp.git
 $ dotnet restore   # Facultatif
 $ dotnet build     # Facultatif
 $ dotnet run
 ```
 
-Après avoir cloné le dépôt, la commande `dotnet run` suffit puisqu'elle restaure les dépendances NuGet, compile le projet et lance TeXSharp.
+La commande `dotnet run` suffit puisqu'elle restaure les dépendances NuGet, compile le projet et lance TeXSharp.
+
+> [!NOTE]
+> Lorsque ce projet aura assez mûri, nous mettrons à disposition des fichiers binaires à exécuter. Pour l'instant, il faut compiler TeXSharp depuis la source.
