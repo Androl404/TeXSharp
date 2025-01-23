@@ -1,14 +1,19 @@
 using System;
 using System.Runtime.InteropServices;
 using Gtk;
+using GtkSource;
 using Gio;
 using IronPdf;
 
 class Window {
     private Gtk.ApplicationWindow window; // The main window
-    private Gio.Application sender;
+    private Gio.Application sender; // The sender args on window activation
     public Gtk.ApplicationWindow _Window { // Public property used to access the window attribute in read-only
         get { return this.window; } // get method
+    }
+    private Gtk.Grid grid;
+    public Gtk.Grid _Grid {
+        get { return this.grid; } // get method
     }
 
     // Constructor of the windows
@@ -18,7 +23,12 @@ class Window {
         this.window.Title = title;                                        // Set the title
         this.window.SetDefaultSize(sizeX, sizeY);                         // Set the size (x, y)
         this.window.Show();                                               // Show the window (it's always better to see it)
+        // To set the sender arg
         this.sender = sender;
+        // To create the grid
+        this.grid = Gtk.Grid.New();
+        grid.SetHexpand(true);
+        grid.SetVexpand(true);
     }
 
     // To construct the header bar of the window
@@ -55,6 +65,7 @@ class Window {
         this.window.SetTitlebar(header_bar); // Set the header bar
     }
 
+    // To create the editor and returns the ScrolledWindow associated
     public Gtk.ScrolledWindow MakeTextEditor() {
         // Create ScrolledWindow for scrolling capability
         var scrolled = Gtk.ScrolledWindow.New();
@@ -62,21 +73,33 @@ class Window {
         scrolled.SetVexpand(true);
 
         // Create TextView
-        var textView = Gtk.TextView.New();
+        // var textView = Gtk.TextView.New();
         // If you want to control whether it's editable:
-        textView.Editable = true; // or false to make it read-only
-        textView.Buffer.Text = Globals.lan.ServeTrad("hello_world");
+        // textView.Editable = true; // or false to make it read-only
+        // textView.Buffer.Text = Globals.lan.ServeTrad("hello_world");
+
+        var buf = GtkSource.Buffer.New(null);
+        var view = GtkSource.View.NewWithBuffer(buf);
+        view.Monospace = true;
+        view.ShowLineNumbers = true;
+        var settings = Gtk.Settings.GetDefault();
+        if (settings?.GtkApplicationPreferDarkTheme == true ||
+            settings?.GtkThemeName?.ToLower()?.Contains("dark") == true)
+            buf.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme("Adwaita-dark"));
 
         // Add TextView to ScrolledWindow
-        scrolled.SetChild(textView);
+        scrolled.SetChild(view);
+        this.grid.Attach(scrolled, 0, 2, 2, 1); // Spans 2 columns in the third row
+
         return scrolled;
     }
 
+    // To create the PDF viewer and returns the associated ScrolledWindow
     public Gtk.ScrolledWindow MakePDFViewer() {
         IronPdf.PdfDocument pdf = new IronPdf.PdfDocument("./assets/pdf_test.pdf");
 
         string path = "";
-        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) { // If we are on a niche operating system for games
             path = Environment.ExpandEnvironmentVariables("%temp%/");
         } else { // Unix-based OS
             path = "/tmp/";
@@ -106,6 +129,9 @@ class Window {
         scrolledPdf.SetHexpand(true);
         scrolledPdf.SetVexpand(true);
         scrolledPdf.SetChild(image_box);
+        this.grid.Attach(scrolledPdf, 2, 2, 3, 1);  // Spans 3 columns in the third row/column
+
         return scrolledPdf;
     }
+
 }
