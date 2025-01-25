@@ -17,7 +17,7 @@ Bien évidemment, il faut que le SDK .NET et le runtime .NET soit installés sur
 
 Sur Debian/Ubuntu, il faut installer la librairie GTK4 ainsi que les fichiers de développement :
 ```sh
-$ sudo apt install libgtk-4-dev
+$ sudo apt install libgtk-4-dev libgtk-4-bin libgtk-4-1 libgtksourceview-5-0
 ```
 
 Sur les autres distributions, référez vous à votre gestionnaire de paquets pour installer cette librairie. Le nom de la librairie peut potentiellement changer selon les distributions.
@@ -28,7 +28,7 @@ Pour Windows, nous vous recommandons d'installer `msys2` ([site officiel](https:
 
 ```sh
 $ pacman -Suy
-$ pacman -S mingw-w64-x86_64-gtk4
+$ pacman -S mingw-w64-x86_64-gtk4 mingw-w64-x86_64-gtksourceview5
 ```
 
 Il existe sûrement d'autres moyens d'installer ces paquets, la méthode que nous proposons ici est la plus simple. Ajoutez ensuite `C:\msys64\mingw64\bin` dans le PATH en tant que premier élément.
