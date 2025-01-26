@@ -21,7 +21,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Download GTK library
-      run: sudo apt install -y libgtk-4-dev
+      run: sudo apt install -y libgtk-4-dev libgtk-4-bin libgtk-4-1 libgtksourceview-5-0
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
