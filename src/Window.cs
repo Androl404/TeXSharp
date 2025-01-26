@@ -6,8 +6,8 @@ using Gio;
 using IronPdf;
 
 class Window {
-    private Gtk.ApplicationWindow window; // The main window
     private Gio.Application sender; // The sender args on window activation
+    private Gtk.ApplicationWindow window; // The main window
     public Gtk.ApplicationWindow _Window { // Public property used to access the window attribute in read-only
         get { return this.window; } // get method
     }
@@ -15,6 +15,8 @@ class Window {
     public Gtk.Grid _Grid {
         get { return this.grid; } // get method
     }
+    private Dictionary<string, SourceEditor> editors;
+    private string active_editor;
 
     // Constructor of the windows
     // Takes title, size, and flag from event in Main
@@ -29,40 +31,61 @@ class Window {
         this.grid = Gtk.Grid.New();
         grid.SetHexpand(true);
         grid.SetVexpand(true);
+        this.editors = new Dictionary<string, SourceEditor>();
     }
 
     // To construct the header bar of the window
     // By default, the desktop manager takes care of that, but we decideed to make
     // our own header bar
-    public void SetHeaderBar() {
-        var header_bar = Gtk.HeaderBar.New(); // Create the header bar
+    public void SetHeaderBar(Gtk.Window window) {
+        var header_bar = new AppHeaderBar(); // Create the header bar
 
         // TODO: make the menu bar with all the options (file, edit, etc.)
-        header_bar.PackStart(Gtk.Label.New("Mettre la menu bar ici")); // We put a label at the beginning of the header bar
+        var func_open  = async (object? sender, EventArgs args) => {
+            var open_dialog = Gtk.FileDialog.New();
+            try {
+                open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
+                var open_task = open_dialog.OpenAsync(this.window);
+                await open_task;
+                this.editors["new1"].OpenFile(open_task.Result.GetPath());
+            } catch (Exception e) {
+                Console.WriteLine($"WARNING: {e.Message}");
+            } finally {
+                open_dialog.Dispose();
+            }
+        };
 
-        var button = Gtk.MenuButton.New();                                                  // We create a button
-        button.SetHasFrame(false);                                                          // without a frame
-        var button_icon = Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("open-menu-symbolic")); // We create an image with an icon
-        // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
-        button.SetChild(button_icon); // We set the icon as child of the button (the child will be contained in the button)
+        var func_save = async (object? sender, EventArgs args) => {
+            var save_dialog = Gtk.FileDialog.New();
+            try {
+                save_dialog.SetTitle(Globals.lan.ServeTrad("save_file"));
+                var save_task = save_dialog.SaveAsync(this.window);
+                await save_task;
+                this.editors["new1"].SaveFile(save_task.Result.GetPath());
+            } catch (Exception e) {
+                Console.WriteLine($"WARNING: {e.Message}");
+            } finally {
+                save_dialog.Dispose();
+            }
+        };
 
-        var pop = Gtk.Popover.New();                           // New popover menu
-        var box = Gtk.Box.New(Gtk.Orientation.Vertical, 0);    // New box to put in the popover menu
-        var button_about = Gtk.Button.New();                   // Button to put in the box
-        button_about.SetLabel(Globals.lan.ServeTrad("about")); // Label of the button
-        button_about.SetHasFrame(false);                       // Without frame
-        button_about.OnClicked += (sender, args) => {
+        var func_quit = async (object? sender, EventArgs args) => {
+            this.window.Destroy();
+        };
+
+        header_bar.AddMenuButon(Globals.lan.ServeTrad("file"), false);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], [func_open, func_save, func_quit], false, true);
+
+        var about_func = (object? sender, EventArgs args) => {
             var dialog = new TAboutDialog("TeXSharp");
             dialog.Application = (Gtk.Application)this.sender; // CS0030: Impossible de convertir le type 'Gtk.Button' en 'Gtk.Application'
             dialog.Show();
         };
-
-        // We then encapsulate our elements
-        box.Append(button_about);
-        pop.SetChild(box);
-        button.SetPopover(pop);
-        header_bar.PackEnd(button);
-        this.window.SetTitlebar(header_bar); // Set the header bar
+        // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
+        var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
+        header_bar.AddMenuButon(button_icon, false);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")],[about_func],false, false);
+        header_bar.SetWindowHeaderBar(window);
     }
 
     // To create the editor and returns the ScrolledWindow associated
@@ -72,24 +95,13 @@ class Window {
         scrolled.SetHexpand(true);
         scrolled.SetVexpand(true);
 
-        // Create TextView
-        // var textView = Gtk.TextView.New();
-        // If you want to control whether it's editable:
-        // textView.Editable = true; // or false to make it read-only
-        // textView.Buffer.Text = Globals.lan.ServeTrad("hello_world");
-
-        var buf = GtkSource.Buffer.New(null);
-        var view = GtkSource.View.NewWithBuffer(buf);
-        view.Monospace = true;
-        view.ShowLineNumbers = true;
-        var settings = Gtk.Settings.GetDefault();
-        if (settings?.GtkApplicationPreferDarkTheme == true ||
-            settings?.GtkThemeName?.ToLower()?.Contains("dark") == true)
-            buf.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme("Adwaita-dark"));
+        this.editors.Add("new1", new SourceEditor(""));
+        var editor_view = this.editors["new1"].GetView();
+        this.active_editor = "new1";
 
         // Add TextView to ScrolledWindow
-        scrolled.SetChild(view);
-        this.grid.Attach(scrolled, 0, 2, 2, 1); // Spans 2 columns in the third row
+        scrolled.SetChild(editor_view);
+        this.grid.Attach(scrolled, 0, 0, 1, 1); // Spans 2 columns in the third row
 
         return scrolled;
     }
@@ -129,9 +141,17 @@ class Window {
         scrolledPdf.SetHexpand(true);
         scrolledPdf.SetVexpand(true);
         scrolledPdf.SetChild(image_box);
-        this.grid.Attach(scrolledPdf, 2, 2, 3, 1);  // Spans 3 columns in the third row/column
+        this.grid.Attach(scrolledPdf, 1, 0, 1, 1);  // Spans 3 columns in the third row/column
 
         return scrolledPdf;
     }
 
+    // Manuals getters
+    public Gtk.Window GetWindow() {
+        return this.window;
+    }
+
+    public Gtk.Grid GetGrid() {
+        return this.grid;
+    }
 }

@@ -5,7 +5,7 @@ public class Languages {
     private Dictionary<string, string> Traduction;
     private string DBPath;
     private string locale;
-    private string language;
+    private string? language;
 
     public Languages(string DBPath, string locale) {
         this.locale = locale;
@@ -46,8 +46,9 @@ public class Languages {
             this.Traduction = new Dictionary<string, string>();
             if (!dataReader.HasRows) throw new System.IndexOutOfRangeException("Database response is empty");
             while (await dataReader.ReadAsync()) {
-                string mkey = Convert.ToString(dataReader["field"]); // (string)
-                string mvalue = Convert.ToString(dataReader["traduction"]);
+                string? mkey = Convert.ToString(dataReader["field"]); // (string)
+                string? mvalue = Convert.ToString(dataReader["traduction"]);
+                if (mkey != null && mvalue != null)
                 this.Traduction.Add(mkey, mvalue);
             }
             await conn.CloseAsync();
