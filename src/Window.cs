@@ -6,10 +6,10 @@ using Gio;
 using IronPdf;
 
 class Window {
-    private Gio.Application sender; // The sender args on window activation
-    private Gtk.ApplicationWindow window; // The main window
+    private Gio.Application sender;        // The sender args on window activation
+    private Gtk.ApplicationWindow window;  // The main window
     public Gtk.ApplicationWindow _Window { // Public property used to access the window attribute in read-only
-        get { return this.window; } // get method
+        get { return this.window; }        // get method
     }
     private Gtk.Grid grid;
     public Gtk.Grid _Grid {
@@ -43,15 +43,12 @@ class Window {
         // TODO: make the menu bar with all the options (file, edit, etc.)
 
         header_bar.AddMenuButon(Globals.lan.ServeTrad("file"), false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")],
-                                   [GetFunc("open"), GetFunc("save"), GetFunc("quit")],
-                                   false,
-                                   true);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], [GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
 
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
         header_bar.AddMenuButon(button_icon, false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")],[GetFunc("about")],false, false);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")], [GetFunc("about")], false, false);
         header_bar.SetWindowHeaderBar(window);
     }
 
@@ -89,17 +86,20 @@ class Window {
         var image_box = Gtk.Box.New(Gtk.Orientation.Vertical, 5);
 
         // TODO: Find another way to show images than converting them to images, it is not convenient
-        // Usage of Gtk.Picture widget instead of Gtk.Image
-        var imagePdf = Gtk.Picture.New();
         for (int i = 1; i <= pdf.PageCount; ++i) {
-            imagePdf = Gtk.Picture.NewForFilename(path + i + ".png");
-            // Make the image fill the available space horizontally
-            imagePdf.SetHexpand(true);
-            imagePdf.SetContentFit(ContentFit.Fill);
-            // IMPORTANT: this need to be on 'false' or else, the scrolled window will not work
-            imagePdf.SetCanShrink(false);
-            // Keep the aspect ratio of the image, which avoid the image to be stretched when resizing the window
-            imagePdf.SetKeepAspectRatio(true);
+            var zoom = Gtk.GestureZoom.New();
+
+            // Usage of Gtk.Picture widget instead of Gtk.Image
+            var imagePdf = Gtk.Image.NewFromFile(path + i + ".png");
+
+            // Initial size of the image
+            imagePdf.PixelSize = 500;
+            // We change the size of the image based on the scale factor, only when the zoom is detected (touchpad pinched)
+            zoom.OnScaleChanged += (sender, args) => { imagePdf.PixelSize = (int)(500 * zoom.GetScaleDelta()); };
+
+            // We add the gesture zoom to the box so that the entire box is rescaled when zooming, and not the image alone
+            image_box.AddController(zoom);
+            // And we add each image to the box
             image_box.Append(imagePdf);
         }
 
@@ -108,7 +108,7 @@ class Window {
         scrolledPdf.SetHexpand(true);
         scrolledPdf.SetVexpand(true);
         scrolledPdf.SetChild(image_box);
-        this.grid.Attach(scrolledPdf, 1, 1, 1, 1);  // Spans 3 columns in the third row/column
+        this.grid.Attach(scrolledPdf, 1, 1, 1, 1); // Spans 3 columns in the third row/column
 
         return scrolledPdf;
     }
@@ -164,24 +164,20 @@ class Window {
         };
 
         switch (function) {
-            case "open":
-                return func_open;
-            case "save":
-                return func_save;
-            case "quit":
-                return func_quit;
-            case "about":
-                return func_about;
-            default:
-                return null;
+        case "open":
+            return func_open;
+        case "save":
+            return func_save;
+        case "quit":
+            return func_quit;
+        case "about":
+            return func_about;
+        default:
+            return null;
         }
     }
 
     // Manuals getters
-    public Gtk.Window GetWindow() {
-        return this.window;
-    }
-    public Gtk.Grid GetGrid() {
-        return this.grid;
-    }
+    public Gtk.Window GetWindow() { return this.window; }
+    public Gtk.Grid GetGrid() { return this.grid; }
 }
