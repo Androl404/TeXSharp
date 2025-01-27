@@ -17,6 +17,7 @@ class SourceEditor {
     public bool _Exists {
         get { return this.file_exists; }
     }
+    private LanguageManager language_manager;
 
     public SourceEditor(string path) {
         // TODO: Take in account the path to open an instance of an editor with an existing file
@@ -27,15 +28,14 @@ class SourceEditor {
         var settings = Gtk.Settings.GetDefault();
         if (settings?.GtkApplicationPreferDarkTheme == true || settings?.GtkThemeName?.ToLower()?.Contains("dark") == true)
             this.buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme("Adwaita-dark"));
+        this.language_manager = GtkSource.LanguageManager.New();
     }
 
     public void OpenFile(string path) {
         this.path = path;
         this.file_exists = true;
         this.buffer.Text = System.IO.File.ReadAllText(path);
-        var languageManager = GtkSource.LanguageManager.New();
-        this.buffer.Language = languageManager.GuessLanguage(this.path, null);
-        this.view.SetHscrollPolicy(Gtk.ScrollablePolicy.Minimum);
+        this.SetBufferLanguage();
     }
 
     public void SaveFile(string path) {
@@ -44,6 +44,11 @@ class SourceEditor {
         }
         System.IO.File.WriteAllText(path, this.buffer.Text);
         this.file_exists = true;
+        this.SetBufferLanguage();
+    }
+
+    private void SetBufferLanguage() {
+        this.buffer.Language = this.language_manager.GuessLanguage(this.path, null);
     }
 
     // Manuals Getters
