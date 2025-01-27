@@ -13,6 +13,7 @@ class Program {
 
             var text_editor = window.MakeTextEditor();
             var PDF_viewer = window.MakePDFViewer();
+            window.MakeButtonBar();
 
             // Create some other elements for example
             // var button1 = Gtk.Button.New();

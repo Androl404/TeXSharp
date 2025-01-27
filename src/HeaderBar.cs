@@ -30,29 +30,8 @@ class AppHeaderBar {
         this.menu_button = button;
     }
 
-    public void AddButtonInMenu(string[] label, Action<object?, EventArgs>[] funcs, bool frame, bool pack_start) {
-        if (label.Length != funcs.Length) throw new System.OverflowException("Lenght of two tables are not equal !");
-
-        var pop_file = Gtk.Popover.New(); // New popover menu
-        var box_file = Gtk.Box.New(Gtk.Orientation.Vertical, 0);    // New box to put in the popover menu
-        for (int i = 0; i < label.Length; ++i) {
-            var button_file_open = Gtk.Button.New(); // Button to put in the box
-            button_file_open.SetLabel(label[i]); // Label of the button
-            button_file_open.SetHasFrame(frame); // Without frame
-            // Create a local copy of i to capture the corresponding value of i
-            int localIndex = i;
-            button_file_open.OnClicked += (sender, args) => {
-                funcs[localIndex](sender, args); // Utiliser la copie locale
-            };
-            box_file.Append(button_file_open); // Ajouter le bouton à la box
-        }
-        pop_file.SetChild(box_file);
-        this.menu_button.SetPopover(pop_file);
-        if (pack_start) this.headerbar.PackStart(this.menu_button);
-        else this.headerbar.PackEnd(this.menu_button);
-    }
-
-    // Overload for async functions to be executed
+    // TODO: Refactor this function in order to maintain an access to the Button in case we nedd to aplly them a method
+    // Functions passed into the array must be async
     public void AddButtonInMenu(string[] label, Func<object?, EventArgs, System.Threading.Tasks.Task>[] funcs, bool frame, bool pack_start) {
         if (label.Length != funcs.Length) throw new System.OverflowException("Lenght of two tables are not equal !");
 

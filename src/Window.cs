@@ -41,50 +41,17 @@ class Window {
         var header_bar = new AppHeaderBar(); // Create the header bar
 
         // TODO: make the menu bar with all the options (file, edit, etc.)
-        var func_open  = async (object? sender, EventArgs args) => {
-            var open_dialog = Gtk.FileDialog.New();
-            try {
-                open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
-                var open_task = open_dialog.OpenAsync(this.window);
-                await open_task;
-                this.editors["new1"].OpenFile(open_task.Result.GetPath());
-            } catch (Exception e) {
-                Console.WriteLine($"WARNING: {e.Message}");
-            } finally {
-                open_dialog.Dispose();
-            }
-        };
-
-        var func_save = async (object? sender, EventArgs args) => {
-            var save_dialog = Gtk.FileDialog.New();
-            try {
-                save_dialog.SetTitle(Globals.lan.ServeTrad("save_file"));
-                var save_task = save_dialog.SaveAsync(this.window);
-                await save_task;
-                this.editors["new1"].SaveFile(save_task.Result.GetPath());
-            } catch (Exception e) {
-                Console.WriteLine($"WARNING: {e.Message}");
-            } finally {
-                save_dialog.Dispose();
-            }
-        };
-
-        var func_quit = async (object? sender, EventArgs args) => {
-            this.window.Destroy();
-        };
 
         header_bar.AddMenuButon(Globals.lan.ServeTrad("file"), false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], [func_open, func_save, func_quit], false, true);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")],
+                                   [GetFunc("open"), GetFunc("save"), GetFunc("quit")],
+                                   false,
+                                   true);
 
-        var about_func = (object? sender, EventArgs args) => {
-            var dialog = new TAboutDialog("TeXSharp");
-            dialog.Application = (Gtk.Application)this.sender; // CS0030: Impossible de convertir le type 'Gtk.Button' en 'Gtk.Application'
-            dialog.Show();
-        };
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
         header_bar.AddMenuButon(button_icon, false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")],[about_func],false, false);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")],[GetFunc("about")],false, false);
         header_bar.SetWindowHeaderBar(window);
     }
 
@@ -101,7 +68,7 @@ class Window {
 
         // Add TextView to ScrolledWindow
         scrolled.SetChild(editor_view);
-        this.grid.Attach(scrolled, 0, 0, 1, 1); // Spans 2 columns in the third row
+        this.grid.Attach(scrolled, 0, 1, 1, 1); // Spans 2 columns in the third row
 
         return scrolled;
     }
@@ -141,16 +108,79 @@ class Window {
         scrolledPdf.SetHexpand(true);
         scrolledPdf.SetVexpand(true);
         scrolledPdf.SetChild(image_box);
-        this.grid.Attach(scrolledPdf, 1, 0, 1, 1);  // Spans 3 columns in the third row/column
+        this.grid.Attach(scrolledPdf, 1, 1, 1, 1);  // Spans 3 columns in the third row/column
 
         return scrolledPdf;
+    }
+
+    public void MakeButtonBar() {
+        var main_box = new ButtonBar();
+        main_box.AddButton(Gio.ThemedIcon.New("document-save-symbolic"), GetFunc("save"));
+        main_box.AddButton(Gio.ThemedIcon.New("document-open-symbolic"), GetFunc("open"));
+        this.grid.Attach(main_box.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
+    }
+
+    private Func<object?, EventArgs, System.Threading.Tasks.Task> GetFunc(string function) {
+        var func_open  = async (object? sender, EventArgs args) => {
+            var open_dialog = Gtk.FileDialog.New();
+            try {
+                open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
+                var open_task = open_dialog.OpenAsync(this.window);
+                await open_task;
+                this.editors["new1"].OpenFile(open_task.Result.GetPath());
+            } catch (Exception e) {
+                Console.WriteLine($"WARNING: {e.Message}");
+            } finally {
+                open_dialog.Dispose();
+            }
+        };
+
+        var func_save = async (object? sender, EventArgs args) => {
+            var save_dialog = Gtk.FileDialog.New();
+            try {
+                if (!this.editors["new1"]._Exists) {
+                    save_dialog.SetTitle(Globals.lan.ServeTrad("save_file"));
+                    var save_task = save_dialog.SaveAsync(this.window);
+                    await save_task;
+                    this.editors["new1"].SaveFile(save_task.Result.GetPath());
+                } else {
+                    this.editors["new1"].SaveFile(this.editors["new1"]._Path);
+                }
+            } catch (Exception e) {
+                Console.WriteLine($"WARNING: {e.Message}");
+            } finally {
+                save_dialog.Dispose();
+            }
+        };
+
+        var func_quit = async (object? sender, EventArgs args) => {
+            this.window.Destroy();
+        };
+
+        var func_about = async (object? sender, EventArgs args) => {
+            var dialog = new TAboutDialog("TeXSharp");
+            dialog.Application = (Gtk.Application)this.sender; // CS0030: Impossible de convertir le type 'Gtk.Button' en 'Gtk.Application'
+            dialog.Show();
+        };
+
+        switch (function) {
+            case "open":
+                return func_open;
+            case "save":
+                return func_save;
+            case "quit":
+                return func_quit;
+            case "about":
+                return func_about;
+            default:
+                return null;
+        }
     }
 
     // Manuals getters
     public Gtk.Window GetWindow() {
         return this.window;
     }
-
     public Gtk.Grid GetGrid() {
         return this.grid;
     }
