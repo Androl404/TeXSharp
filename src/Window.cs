@@ -59,7 +59,7 @@ class Window {
         scrolled.SetHexpand(true);
         scrolled.SetVexpand(true);
 
-        this.editors.Add("new1", new SourceEditor(""));
+        this.editors.Add("new1", new SourceEditor("", this.grid));
         var editor_view = this.editors["new1"].GetView();
         this.active_editor = "new1";
 
