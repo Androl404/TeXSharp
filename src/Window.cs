@@ -6,10 +6,10 @@ using Gio;
 using IronPdf;
 
 class Window {
-    private Gio.Application sender;        // The sender args on window activation
-    private Gtk.ApplicationWindow window;  // The main window
+    private Gio.Application sender; // The sender args on window activation
+    private Gtk.ApplicationWindow window; // The main window
     public Gtk.ApplicationWindow _Window { // Public property used to access the window attribute in read-only
-        get { return this.window; }        // get method
+        get { return this.window; } // get method
     }
     private Gtk.Grid grid;
     public Gtk.Grid _Grid {
@@ -43,12 +43,15 @@ class Window {
         // TODO: make the menu bar with all the options (file, edit, etc.)
 
         header_bar.AddMenuButon(Globals.lan.ServeTrad("file"), false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], [GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")],
+                                   [GetFunc("open"), GetFunc("save"), GetFunc("quit")],
+                                   false,
+                                   true);
 
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
         header_bar.AddMenuButon(button_icon, false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")], [GetFunc("about")], false, false);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")],[GetFunc("about")],false, false);
         header_bar.SetWindowHeaderBar(window);
     }
 
@@ -105,7 +108,7 @@ class Window {
         scrolledPdf.SetHexpand(true);
         scrolledPdf.SetVexpand(true);
         scrolledPdf.SetChild(image_box);
-        this.grid.Attach(scrolledPdf, 1, 1, 1, 1); // Spans 3 columns in the third row/column
+        this.grid.Attach(scrolledPdf, 1, 1, 1, 1);  // Spans 3 columns in the third row/column
 
         return scrolledPdf;
     }
@@ -114,6 +117,7 @@ class Window {
         var main_box = new ButtonBar();
         main_box.AddButton(Gio.ThemedIcon.New("document-save-symbolic"), GetFunc("save"));
         main_box.AddButton(Gio.ThemedIcon.New("document-open-symbolic"), GetFunc("open"));
+        main_box.AddButton(Gio.ThemedIcon.New("media-playback-start-symbolic"), GetFunc("compile"));
         this.grid.Attach(main_box.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
@@ -160,21 +164,33 @@ class Window {
             dialog.Show();
         };
 
+        var func_compile = async (object? sender, EventArgs args) => {
+            func_save(sender, args);
+            var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-interaction=nonstopmode " + this.editors["new1"].GetPath(), 5000000);
+            Console.WriteLine(process.Output);
+        };
+
         switch (function) {
-        case "open":
-            return func_open;
-        case "save":
-            return func_save;
-        case "quit":
-            return func_quit;
-        case "about":
-            return func_about;
-        default:
-            return null;
+            case "open":
+                return func_open;
+            case "save":
+                return func_save;
+            case "compile":
+                return func_compile;
+            case "quit":
+                return func_quit;
+            case "about":
+                return func_about;
+            default:
+                return null;
         }
     }
 
     // Manuals getters
-    public Gtk.Window GetWindow() { return this.window; }
-    public Gtk.Grid GetGrid() { return this.grid; }
+    public Gtk.Window GetWindow() {
+        return this.window;
+    }
+    public Gtk.Grid GetGrid() {
+        return this.grid;
+    }
 }
