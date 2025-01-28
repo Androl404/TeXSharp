@@ -32,7 +32,7 @@ class Program {
 
             // Optional: Add some spacing between elements
             // window._Grid.RowSpacing = 10;
-            // window._Grid.ColumnSpacing = 10;
+            window._Grid.ColumnSpacing = 10;
             // window._Grid.SetMarginStart(15);
             // window._Grid.SetMarginTop(15);
             // window._Grid.SetMarginBottom(15);
