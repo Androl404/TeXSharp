@@ -62,27 +62,3 @@ public class Languages {
         return this.Traduction[field];
     }
 }
-
-// using (var connection = new SqliteConnection("Data Source=./assets/languages.sqlite"))
-// {
-//     connection.Open();
-
-//     var command = connection.CreateCommand();
-//     command.CommandText =
-//     @"
-//         SELECT traduction
-//         FROM FRENCH
-//         WHERE field = $id
-//     ";
-//     command.Parameters.AddWithValue("$id", "save");
-
-//     using (var reader = command.ExecuteReader())
-//     {
-//         while (reader.Read())
-//         {
-//             var name = reader.GetString(0);
-
-//             Console.WriteLine($"Hello, {name}!");
-//         }
-//     }
-// }
