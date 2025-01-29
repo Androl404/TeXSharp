@@ -6,10 +6,10 @@ using Gio;
 using IronPdf;
 
 class Window {
-    private Gio.Application sender; // The sender args on window activation
-    private Gtk.ApplicationWindow window; // The main window
+    private Gio.Application sender;        // The sender args on window activation
+    private Gtk.ApplicationWindow window;  // The main window
     public Gtk.ApplicationWindow _Window { // Public property used to access the window attribute in read-only
-        get { return this.window; } // get method
+        get { return this.window; }        // get method
     }
     private Gtk.Grid grid;
     public Gtk.Grid _Grid {
@@ -43,10 +43,7 @@ class Window {
         // TODO: make the menu bar with all the options (file, edit, etc.)
 
         header_bar.AddMenuButon(Globals.lan.ServeTrad("file"), false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")],
-                                   [GetFunc("open"), GetFunc("save"), GetFunc("quit")],
-                                   false,
-                                   true);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], [GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
 
         header_bar.AddMenuButon("LaTeX", false);
         header_bar.AddButtonInMenu([Globals.lan.ServeTrad("compile")],
@@ -57,7 +54,7 @@ class Window {
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
         header_bar.AddMenuButon(button_icon, false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")],[GetFunc("about")],false, false);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")], [GetFunc("about")], false, false);
         header_bar.SetWindowHeaderBar(window);
     }
 
@@ -71,6 +68,8 @@ class Window {
         this.editors.Add("new1", new SourceEditor("", this.grid));
         var editor_view = this.editors["new1"].GetView();
         this.active_editor = "new1";
+
+        this.grid.Attach(this.editors["new1"]._TextEntry, 0, 2, 1, 1);
 
         // Add TextView to ScrolledWindow
         scrolled.SetChild(editor_view);
@@ -116,7 +115,7 @@ class Window {
         scrolledPdf.SetHexpand(true);
         scrolledPdf.SetVexpand(true);
         scrolledPdf.SetChild(image_box);
-        this.grid.Attach(scrolledPdf, 1, 1, 1, 1);  // Spans 3 columns in the third row/column
+        this.grid.Attach(scrolledPdf, 1, 1, 1, 1); // Spans 3 columns in the third row/column
 
         return scrolledPdf;
     }
@@ -126,6 +125,7 @@ class Window {
         main_box.AddButton(Gio.ThemedIcon.New("document-save-symbolic"), GetFunc("save"));
         main_box.AddButton(Gio.ThemedIcon.New("document-open-symbolic"), GetFunc("open"));
         main_box.AddButton(Gio.ThemedIcon.New("media-playback-start-symbolic"), GetFunc("compile"));
+        main_box.AddButton(Gio.ThemedIcon.New("applications-system-symbolic"), GetFunc("vim"));
         this.grid.Attach(main_box.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
@@ -185,27 +185,51 @@ class Window {
             }
         };
 
+        var func_vim = async (object? sender, EventArgs args) => {
+            // If the VIM mode is enabled (1), we disable it
+            if (this.editors["new1"]._VIMmodeEnabled) {
+                this.editors["new1"]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.None);
+                this.editors["new1"]._View.RemoveController(this.editors["new1"]._VIMeventControllerKey);
+                // VIMmode.SetClientWidget(null);
+                this.editors["new1"]._VIMmodeEnabled = false;
+            } else {
+                // If the VIM mode is disabled (0), we enable it
+
+                // Set the IM context to the event controller key
+                this.editors["new1"]._VIMeventControllerKey.SetImContext(this.editors["new1"]._VIMmode);
+                this.editors["new1"]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.Capture);
+                // Add the event controller key to the view
+                // And the vim input module context to the view (editor)
+                this.editors["new1"]._View.AddController(this.editors["new1"]._VIMeventControllerKey);
+                this.editors["new1"]._VIMmode.SetClientWidget(this.editors["new1"]._View);
+
+                // Bind the command bar text to the text entry so that when we type ":" in the editor it will show up in the text entry at the bottom
+                this.editors["new1"]._VIMmode.BindProperty("command-bar-text", this.editors["new1"]._TextEntry, "text", 0);
+                this.editors["new1"]._VIMmode.BindProperty("command-text", this.editors["new1"]._TextEntry, "text", 0);
+
+                this.editors["new1"]._VIMmodeEnabled = true;
+            }
+        };
+
         switch (function) {
-            case "open":
-                return func_open;
-            case "save":
-                return func_save;
-            case "compile":
-                return func_compile;
-            case "quit":
-                return func_quit;
-            case "about":
-                return func_about;
-            default:
-                return null;
+        case "open":
+            return func_open;
+        case "save":
+            return func_save;
+        case "compile":
+            return func_compile;
+        case "quit":
+            return func_quit;
+        case "about":
+            return func_about;
+        case "vim":
+            return func_vim;
+        default:
+            return null;
         }
     }
 
     // Manuals getters
-    public Gtk.Window GetWindow() {
-        return this.window;
-    }
-    public Gtk.Grid GetGrid() {
-        return this.grid;
-    }
+    public Gtk.Window GetWindow() { return this.window; }
+    public Gtk.Grid GetGrid() { return this.grid; }
 }
