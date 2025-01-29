@@ -19,6 +19,28 @@ class SourceEditor {
     }
     private LanguageManager language_manager;
 
+    private GtkSource.VimIMContext VIMmode = GtkSource.VimIMContext.New();
+    public GtkSource.VimIMContext _VIMmode {
+        get { return this.VIMmode; }
+    }
+
+    private Gtk.EventControllerKey VIMeventControllerKey = Gtk.EventControllerKey.New();
+    public Gtk.EventControllerKey _VIMeventControllerKey {
+        get { return this.VIMeventControllerKey; }
+    }
+
+    // 0 if vim mode is disabled, 1 if vim mode is enabled (default is disabled)
+    private bool VIMmodeEnabled = false;
+    public bool _VIMmodeEnabled {
+        get { return this.VIMmodeEnabled; }
+        set { this.VIMmodeEnabled = value; }
+    }
+
+    private Gtk.Entry TextEntry = new Gtk.Entry();
+    public Gtk.Entry _TextEntry {
+        get { return this.TextEntry; }
+    }
+
     public SourceEditor(string path, Gtk.Grid grid) {
         // TODO: Take in account the path to open an instance of an editor with an existing file
         this.buffer = GtkSource.Buffer.New(null);
@@ -27,28 +49,6 @@ class SourceEditor {
         view.ShowLineNumbers = true;
         view.HighlightCurrentLine = true;
         view.SetTabWidth(4);
-
-        // Creation of a VIM mode
-        // First step is to actually create the Input Module (IM) Context for the VIM mode
-        // And to create an event controller key to handle the key events
-        var eventControllerKey = Gtk.EventControllerKey.New();
-        var VIMmode = VimIMContext.New();
-
-        // Set the IM context to the event controller key
-        eventControllerKey.SetImContext(VIMmode);
-        eventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.Capture);
-        // Add the event controller key to the view
-        // And the vim input module context to the view (editor)
-        view.AddController(eventControllerKey);
-        VIMmode.SetClientWidget(view);
-
-        // Creating an entry for the command bar
-        var TextEntry = new Gtk.Entry();
-        grid.Attach(TextEntry, 0, 2, 1, 1);
-
-        // Bind the command bar text to the text entry so that when we type ":" in the editor it will show up in the text entry at the bottom
-        VIMmode.BindProperty("command-bar-text", TextEntry, "text", 0);
-        VIMmode.BindProperty("command-text", TextEntry, "text", 0);
 
         // TODO : hide the entry and only show it when the user presses ":" in the editor
         // And hide it when the user presses "Enter" or "Escape"
