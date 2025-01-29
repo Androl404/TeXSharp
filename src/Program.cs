@@ -12,7 +12,7 @@ class Program {
             window.SetHeaderBar(window._Window);
 
             var text_editor = window.MakeTextEditor();
-            var PDF_viewer = window.MakePDFViewer();
+            var PDF_viewer = window.MakePDFViewer(null);
             window.MakeButtonBar();
 
             // Create some other elements for example

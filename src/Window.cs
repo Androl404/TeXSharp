@@ -48,6 +48,12 @@ class Window {
                                    false,
                                    true);
 
+        header_bar.AddMenuButon("LaTeX", false);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("compile")],
+                                   [GetFunc("compile")],
+                                   false,
+                                   true);
+
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
         header_bar.AddMenuButon(button_icon, false);
@@ -74,8 +80,10 @@ class Window {
     }
 
     // To create the PDF viewer and returns the associated ScrolledWindow
-    public Gtk.ScrolledWindow MakePDFViewer() {
-        IronPdf.PdfDocument pdf = new IronPdf.PdfDocument("./assets/pdf_test.pdf");
+    public Gtk.ScrolledWindow MakePDFViewer(string? pdf_path) {
+        // IronPdf.PdfDocument pdf = new IronPdf.PdfDocument("./assets/pdf_test.pdf");
+        if (pdf_path is null) return Gtk.ScrolledWindow.New();
+        IronPdf.PdfDocument pdf = new IronPdf.PdfDocument(pdf_path);
 
         string path = "";
         if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) { // If we are on a niche operating system for games
@@ -133,6 +141,8 @@ class Window {
                 Console.WriteLine($"WARNING: {e.Message}");
             } finally {
                 open_dialog.Dispose();
+                if (System.IO.File.Exists(this.editors["new1"].GetPath()[..^3] + "pdf"))
+                this.MakePDFViewer(this.editors["new1"].GetPath()[..^3] + "pdf");
             }
         };
 
@@ -165,9 +175,14 @@ class Window {
         };
 
         var func_compile = async (object? sender, EventArgs args) => {
-            func_save(sender, args);
-            var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-interaction=nonstopmode " + this.editors["new1"].GetPath(), 5000000);
-            Console.WriteLine(process.Output);
+            await func_save(sender, args);
+            if (this.editors["new1"].GetFileExists()) {
+                var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editors["new1"].GetPath(), 5000000);
+                this.MakePDFViewer(this.editors["new1"].GetPath()[..^3] + "pdf");
+            } else {
+                // TODO: make a little graphical dialog error for that
+                Console.WriteLine("WARNING: File not saved, cannot compile.");
+            }
         };
 
         switch (function) {
