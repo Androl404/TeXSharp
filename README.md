@@ -35,6 +35,22 @@ Il existe sûrement d'autres moyens d'installer ces paquets, la méthode que nou
 
 Nous vous conseillons d'utiliser l'interface .NET en ligne de commande pour travailler sur ce projet. Si vous souhaitez utiliser Visual Studio, nous ne documenterons pas cela ici. De plus, nous vous laisserons créer votre propre fichier de solution Visual.
 
+## Distribution TeX
+
+Pour pouvoir compiler correctement vos documents LaTeX, il faudra avoir une distribution TeX installé sur votre machine. Pour MS Windows, nous vous recommandons d'utiliser [MikTeX](https://miktex.org/) qui est une distribution TeX complète. L'avantage de MikTeX est sa technologie _Just Enought TeX_ qui permet d'installer des paquets LaTeX _on the fly_ et ainsi garder son installation TeX minimale.
+
+Pour les systèmes GNU/Linux, MikTeX peut s'avérer plus compliqué à s'installer notamment sur Ubuntu où il faut télécharger et installer des dépendances manuellement, puisqu'APT n'est pas en capacité de les installer. L'alternative la plus simple est d'installer le paquet `texlive-full` qui télécharge et installe la distribution [TeXLive](https://tug.org/texlive/). Il s'agit d'une installation TeX complète qui peut prendre jusqu'à 10 Go sur votre espace de stockage.
+
+TeXLive peut également être téléchargé depuis son [site web](https://tug.org/texlive/) et installé sur Windows, mais nous recommandons l'utilisation de MikTeX si possible.
+
+### Système de compilation
+
+TeXSharp utiliser le script [LaTeXmk](https://mgeier.github.io/latexmk.html) pour compiler vos documents LaTeX. Il est installé par défaut sur TeXLive, mais l'installation doit être accepté lors de sa première utilisation avec MikTeX.
+
+Ce petit programme écrit en [Perl](https://www.perl.org/) nécessite une installation supplémentaire sur Windows pour pouvoir être utilisé.
+
+Si vous utilisez des références croisées, vous devez souvent exécuter LaTeX plus d'une fois, si vous utilisez BibTeX pour votre bibliographie ou si vous souhaitez avoir un glossaire, vous devez même exécuter des programmes externes entre-temps. LaTeXmk est un script que vous n'avez qu'à exécuter une fois et qui fait tout le reste pour vous... de manière entièrement automatique.
+
 # Compiler localement
 
 Commencez par cloner le dépôt :
