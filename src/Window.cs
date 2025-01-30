@@ -31,6 +31,7 @@ class Window {
         this.grid = Gtk.Grid.New();
         grid.SetHexpand(true);
         grid.SetVexpand(true);
+        this.grid.ColumnSpacing = 10;
         this.editors = new Dictionary<string, SourceEditor>();
     }
 
@@ -43,7 +44,10 @@ class Window {
         // TODO: make the menu bar with all the options (file, edit, etc.)
 
         header_bar.AddMenuButon(Globals.lan.ServeTrad("file"), false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], [GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")],
+                                   [GetFunc("open"), GetFunc("save"), GetFunc("quit")],
+                                   false,
+                                   true);
 
         header_bar.AddMenuButon("LaTeX", false);
         header_bar.AddButtonInMenu([Globals.lan.ServeTrad("compile")],
@@ -122,10 +126,10 @@ class Window {
 
     public void MakeButtonBar() {
         var main_box = new ButtonBar();
-        main_box.AddButton(Gio.ThemedIcon.New("document-save-symbolic"), GetFunc("save"));
-        main_box.AddButton(Gio.ThemedIcon.New("document-open-symbolic"), GetFunc("open"));
-        main_box.AddButton(Gio.ThemedIcon.New("media-playback-start-symbolic"), GetFunc("compile"));
-        main_box.AddButton(Gio.ThemedIcon.New("applications-system-symbolic"), GetFunc("vim"));
+        main_box.AddButton("save", Gio.ThemedIcon.New("document-save-symbolic"), GetFunc("save"));
+        main_box.AddButton("open", Gio.ThemedIcon.New("document-open-symbolic"), GetFunc("open"));
+        main_box.AddButton("compile", Gio.ThemedIcon.New("media-playback-start-symbolic"), GetFunc("compile"));
+        main_box.AddButton("vim", Gio.ThemedIcon.New("applications-system-symbolic"), GetFunc("vim"));
         this.grid.Attach(main_box.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
