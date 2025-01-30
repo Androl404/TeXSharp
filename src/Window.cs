@@ -71,21 +71,12 @@ class Window {
         scrolled.SetHexpand(true);
         scrolled.SetVexpand(true);
 
-        this.editors.Add("new1", new SourceEditor("", this.grid));
-        var editor_view = this.editors["new1"].GetView();
         this.active_editor = "new1";
+        this.editors.Add(this.active_editor, new SourceEditor("", this.grid));
+        var editor_view = this.editors[this.active_editor].GetView();
 
-        this.editors["new1"]._TextEntry.Hide();
-        this.grid.Attach(this.editors["new1"]._TextEntry, 0, 2, 1, 1);
-        this.editors["new1"]._TextEntry.SetMaxLength(5);
-
-        /*
-        var VimShortcutController = Gtk.ShortcutController.New();
-        VimShortcutController.SetScope(Gtk.ShortcutScope.Global);
-        editor_view.AddController(VimShortcutController);
-
-        var VimShortcut = Gtk.Shortcut.New(Gtk.ShortcutTrigger.ParseString("<Control><Shift>V"), Gtk.ShortcutAction.Activate(Gtk.ShortcutActionFlags.Exclusive, this.button_bar._Button, null));
-        */
+        this.editors[this.active_editor]._TextEntry.Hide();
+        this.grid.Attach(this.editors[this.active_editor]._TextEntry, 0, 2, 1, 1);
 
         // Add TextView to ScrolledWindow
         scrolled.SetChild(editor_view);
@@ -157,26 +148,26 @@ class Window {
                 open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
                 var open_task = open_dialog.OpenAsync(this.window);
                 await open_task;
-                this.editors["new1"].OpenFile(open_task.Result.GetPath());
+                this.editors[this.active_editor].OpenFile(open_task.Result.GetPath());
             } catch (Exception e) {
                 Console.WriteLine($"WARNING: {e.Message}");
             } finally {
                 open_dialog.Dispose();
-                if (System.IO.File.Exists(this.editors["new1"].GetPath()[..^3] + "pdf"))
-                this.MakePDFViewer(this.editors["new1"].GetPath()[..^3] + "pdf");
+                if (System.IO.File.Exists(this.editors[this.active_editor].GetPath()[..^3] + "pdf"))
+                this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^3] + "pdf");
             }
         };
 
         var func_save = async (object? sender, EventArgs args) => {
             var save_dialog = Gtk.FileDialog.New();
             try {
-                if (!this.editors["new1"]._Exists) {
+                if (!this.editors[this.active_editor]._Exists) {
                     save_dialog.SetTitle(Globals.lan.ServeTrad("save_file"));
                     var save_task = save_dialog.SaveAsync(this.window);
                     await save_task;
-                    this.editors["new1"].SaveFile(save_task.Result.GetPath());
+                    this.editors[this.active_editor].SaveFile(save_task.Result.GetPath());
                 } else {
-                    this.editors["new1"].SaveFile(this.editors["new1"]._Path);
+                    this.editors[this.active_editor].SaveFile(this.editors[this.active_editor]._Path);
                 }
             } catch (Exception e) {
                 Console.WriteLine($"WARNING: {e.Message}");
@@ -197,9 +188,9 @@ class Window {
 
         var func_compile = async (object? sender, EventArgs args) => {
             await func_save(sender, args);
-            if (this.editors["new1"].GetFileExists()) {
-                var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editors["new1"].GetPath(), 5000000);
-                this.MakePDFViewer(this.editors["new1"].GetPath()[..^3] + "pdf");
+            if (this.editors[this.active_editor].GetFileExists()) {
+                var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editors[this.active_editor].GetPath(), 5000000);
+                this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^3] + "pdf");
             } else {
                 // TODO: make a little graphical dialog error for that
                 Console.WriteLine("WARNING: File not saved, cannot compile.");
@@ -208,11 +199,11 @@ class Window {
 
         var func_vim = async (object? sender, EventArgs args) => {
             // If the VIM mode is enabled (1), we disable it
-            if (this.editors["new1"]._VIMmodeEnabled) {
-                this.editors["new1"]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.None);
-                this.editors["new1"]._View.RemoveController(this.editors["new1"]._VIMeventControllerKey);
-                this.editors["new1"]._TextEntry.Hide();
-                this.editors["new1"]._VIMmodeEnabled = false;
+            if (this.editors[this.active_editor]._VIMmodeEnabled) {
+                this.editors[this.active_editor]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.None);
+                this.editors[this.active_editor]._View.RemoveController(this.editors[this.active_editor]._VIMeventControllerKey);
+                this.editors[this.active_editor]._TextEntry.Hide();
+                this.editors[this.active_editor]._VIMmodeEnabled = false;
             } else {
                 // If the VIM mode is disabled (0), we enable it
 
@@ -220,18 +211,18 @@ class Window {
                 this.editors["new1"]._TextEntry.SetPlaceholderText("Vim command bar");
 
                 // Set the IM context to the event controller key
-                this.editors["new1"]._VIMeventControllerKey.SetImContext(this.editors["new1"]._VIMmode);
-                this.editors["new1"]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.Capture);
+                this.editors[this.active_editor]._VIMeventControllerKey.SetImContext(this.editors[this.active_editor]._VIMmode);
+                this.editors[this.active_editor]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.Capture);
                 // Add the event controller key to the view
                 // And the vim input module context to the view (editor)
-                this.editors["new1"]._View.AddController(this.editors["new1"]._VIMeventControllerKey);
-                this.editors["new1"]._VIMmode.SetClientWidget(this.editors["new1"]._View);
+                this.editors[this.active_editor]._View.AddController(this.editors[this.active_editor]._VIMeventControllerKey);
+                this.editors[this.active_editor]._VIMmode.SetClientWidget(this.editors[this.active_editor]._View);
 
                 // Bind the command bar text to the text entry so that when we type ":" in the editor it will show up in the text entry at the bottom
-                this.editors["new1"]._VIMmode.BindProperty("command-bar-text", this.editors["new1"]._TextEntry, "text", 0);
-                this.editors["new1"]._VIMmode.BindProperty("command-text", this.editors["new1"]._TextEntry, "text", 0);
+                this.editors[this.active_editor]._VIMmode.BindProperty("command-bar-text", this.editors[this.active_editor]._TextEntry, "text", 0);
+                this.editors[this.active_editor]._VIMmode.BindProperty("command-text", this.editors[this.active_editor]._TextEntry, "text", 0);
 
-                this.editors["new1"]._VIMmodeEnabled = true;
+                this.editors[this.active_editor]._VIMmodeEnabled = true;
             }
         };
 
