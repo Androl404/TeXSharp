@@ -18,6 +18,8 @@ class Window {
     private Dictionary<string, SourceEditor> editors;
     private string active_editor;
 
+    private ButtonBar button_bar;
+
     // Constructor of the windows
     // Takes title, size, and flag from event in Main
     public Window(string title, int sizeX, int sizeY, Gio.Application sender) {
@@ -63,11 +65,23 @@ class Window {
         var editor_view = this.editors["new1"].GetView();
         this.active_editor = "new1";
 
+        this.editors["new1"]._TextEntry.Hide();
         this.grid.Attach(this.editors["new1"]._TextEntry, 0, 2, 1, 1);
+        this.editors["new1"]._TextEntry.SetMaxLength(5);
+
+        /*
+        var VimShortcutController = Gtk.ShortcutController.New();
+        VimShortcutController.SetScope(Gtk.ShortcutScope.Global);
+        editor_view.AddController(VimShortcutController);
+
+        var VimShortcut = Gtk.Shortcut.New(Gtk.ShortcutTrigger.ParseString("<Control><Shift>V"), Gtk.ShortcutAction.Activate(Gtk.ShortcutActionFlags.Exclusive, this.button_bar._Button, null));
+        */
 
         // Add TextView to ScrolledWindow
         scrolled.SetChild(editor_view);
         this.grid.Attach(scrolled, 0, 1, 1, 1); // Spans 2 columns in the third row
+
+        // this.grid.AttachNextTo(this.editors["new1"]._TextEntry, scrolled, PositionType.Bottom, 1, 1);
 
         return scrolled;
     }
@@ -178,10 +192,13 @@ class Window {
             if (this.editors["new1"]._VIMmodeEnabled) {
                 this.editors["new1"]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.None);
                 this.editors["new1"]._View.RemoveController(this.editors["new1"]._VIMeventControllerKey);
-                // VIMmode.SetClientWidget(null);
+                this.editors["new1"]._TextEntry.Hide();
                 this.editors["new1"]._VIMmodeEnabled = false;
             } else {
                 // If the VIM mode is disabled (0), we enable it
+
+                this.editors["new1"]._TextEntry.Show();
+                this.editors["new1"]._TextEntry.SetPlaceholderText("Vim command bar");
 
                 // Set the IM context to the event controller key
                 this.editors["new1"]._VIMeventControllerKey.SetImContext(this.editors["new1"]._VIMmode);
