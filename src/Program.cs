@@ -8,7 +8,7 @@ class Program {
         var application = Gtk.Application.New("com.github.TeXSharp", Gio.ApplicationFlags.FlagsNone);
         application.OnActivate += (sender, args) => {
             // Create main Window
-            var window = new Window($"TeXSharp - {Globals.lan.ServeTrad("modern_latex_editor")}", 800, 600, sender);
+            var window = new Window($"{Globals.lan.ServeTrad("new_file")} - TeXSharp", 800, 600, sender);
             window.SetHeaderBar(window._Window);
 
             var text_editor = window.MakeTextEditor();

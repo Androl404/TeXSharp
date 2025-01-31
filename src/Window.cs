@@ -141,6 +141,7 @@ class Window {
                 var open_task = open_dialog.OpenAsync(this.window);
                 await open_task;
                 this.editors[this.active_editor].OpenFile(open_task.Result.GetPath());
+                this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
             } catch (Exception e) {
                 Console.WriteLine($"WARNING: {e.Message}");
             } finally {
@@ -161,6 +162,7 @@ class Window {
                 } else {
                     this.editors[this.active_editor].SaveFile(this.editors[this.active_editor]._Path);
                 }
+                this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
             } catch (Exception e) {
                 Console.WriteLine($"WARNING: {e.Message}");
             } finally {
