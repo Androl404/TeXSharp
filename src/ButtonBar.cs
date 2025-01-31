@@ -21,15 +21,16 @@ class ButtonBar {
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         button.SetChild(button_icon); // We set the icon as child of the button (the child will be contained in the button)
         button.OnClicked += (sender, args) => { func(sender, args); };
+        button.OnActivate += (sender, args) => { func(sender, args); };
         this.button_list.Add(label, button);
         this.box.Append(button);
     }
 
-    public void AddActivatedEvent(string label, Func<object?, EventArgs, System.Threading.Tasks.Task> func) {
-        if (!this.button_list.ContainsKey(label))
-            throw new System.FieldAccessException("The key does not exists in the dictionnary !");
-        this.button_list[label].OnActivate += (sender, args) => { func(sender, args); };
-    }
+    // public void AddActivatedEvent(string label, Func<object?, EventArgs, System.Threading.Tasks.Task> func) {
+    //     if (!this.button_list.ContainsKey(label))
+    //         throw new System.FieldAccessException("The key does not exists in the dictionnary !");
+    //     this.button_list[label].OnActivate += (sender, args) => { func(sender, args); };
+    // }
 
     // Manuals getter
     public Gtk.Box GetBox() { return this.box; }
