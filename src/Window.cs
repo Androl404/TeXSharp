@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
 using Gtk;
-using GtkSource;
 using Gio;
+using GtkSource;
 using IronPdf;
 using GLib;
 
@@ -158,7 +158,8 @@ class Window {
                 this.editors[this.active_editor].OpenFile(open_task.Result.GetPath());
                 this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
             } catch (Exception e) {
-                Console.WriteLine($"WARNING: {e.Message}");
+                Console.WriteLine("WARNING: Dismissed by user");
+                // new DialogWindow($"{Globals.lan.ServeTrad("cannot_open")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
             } finally {
                 open_dialog.Dispose();
                 if (System.IO.File.Exists(this.editors[this.active_editor].GetPath()[..^3] + "pdf"))
@@ -179,7 +180,8 @@ class Window {
                 }
                 this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
             } catch (Exception e) {
-                Console.WriteLine($"WARNING: {e.Message}");
+                Console.WriteLine("WARNING: Dismissed by user");
+                // new DialogWindow($"{Globals.lan.ServeTrad("cannot_save")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
             } finally {
                 save_dialog.Dispose();
             }
@@ -198,11 +200,11 @@ class Window {
         var func_compile = async (object? sender, EventArgs args) => {
             await func_save(sender, args);
             if (this.editors[this.active_editor].GetFileExists()) {
-                var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editors[this.active_editor].GetPath(), 5000000);
-                this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^3] + "pdf");
+                var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editors[this.active_editor].GetPath(), 50000);
+                this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
             } else {
-                // TODO: make a little graphical dialog error for that
-                Console.WriteLine("WARNING: File not saved, cannot compile.");
+                // TODO: Make a graphical popup window in case of error
+                new DialogWindow(Globals.lan.ServeTrad("not_saved_cannot_compile"), Gio.ThemedIcon.New("dialog-warning-symbolic"), Globals.lan.ServeTrad("warning"), this.window);
             }
         };
 

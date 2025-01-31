@@ -26,11 +26,7 @@ public class Languages {
             }
             await conn.CloseAsync();
         } catch (Exception e) {
-            // TODO: Make a graphical popup window in case of error
             throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
-            // var diag = new Gtk.MessageDialog();
-            // diag.Text = "Texte de secours";
-            // diag.Show();
         }
     }
 
@@ -53,7 +49,6 @@ public class Languages {
             }
             await conn.CloseAsync();
         } catch (Exception e) {
-            // TODO: Make a graphical popup window in case of error
             throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
         }
     }
