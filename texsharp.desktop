@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=TeXSharp
+Exec=/media/andrei/Data/dev/Androl404/TeXSharp/bin/Debug/net9.0/TeXSharp
+Icon=/media/andrei/Data/dev/Androl404/TeXSharp/assets/icon/icon.png
+Type=Application
+Terminal=false
+Categories=Utility;
