@@ -83,6 +83,7 @@ class Window {
         scrolled.SetChild(editor_view);
         this.grid.Attach(scrolled, 0, 1, 1, 1); // Spans 2 columns in the third row
 
+        this.window.SetFocus(this.editors[this.active_editor].GetView());
         return scrolled;
     }
 
@@ -145,6 +146,9 @@ class Window {
 
         main_box.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));
         main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>V", "vimAction", GetFunc("vim"), this.sender);
+
+        main_box.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
+        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.sender);
         this.grid.Attach(main_box.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
