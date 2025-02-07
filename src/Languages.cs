@@ -7,11 +7,52 @@ public class Languages {
     private string locale;
     private string? language;
 
-    public Languages(string DBPath, string locale) {
-        this.locale = locale;
+    public Languages(string DBPath) {
         this.DBPath = DBPath;
+        this.AfterConstruction();
+    }
+
+    async public void AfterConstruction() {
+        this.locale = await DBGetLocaleFromLanguage(Globals.settings._Settings_values.language);
         this.DBGetLanguage();
         this.DBGetTrad();
+    }
+
+    async public Task<List<string>> DBGetAllLanguages() {
+        await using var conn = new SqliteConnection($"Data Source={this.DBPath}");
+        List<string> languages = new List<string>();
+        try {
+            await conn.OpenAsync();
+            await using var cmd = new SqliteCommand($"SELECT * FROM LANGUAGES", conn);
+            await using var dataReader = await cmd.ExecuteReaderAsync();
+
+            while (await dataReader.ReadAsync()) {
+                languages.Add((string)dataReader["full_name"]);
+            }
+            await conn.CloseAsync();
+        } catch (Exception e) {
+            throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
+        }
+        return languages;
+    }
+
+    async private Task<string> DBGetLocaleFromLanguage(string language) {
+        await using var conn = new SqliteConnection($"Data Source={this.DBPath}");
+        string locale = "";
+        try {
+            await conn.OpenAsync();
+            await using var cmd = new SqliteCommand($"SELECT locale FROM LANGUAGES WHERE full_name = '{language}'", conn);
+            await using var dataReader = await cmd.ExecuteReaderAsync();
+
+            while (await dataReader.ReadAsync()) {
+                locale = (string)dataReader["locale"];
+            }
+            this.locale = locale;
+            await conn.CloseAsync();
+        } catch (Exception e) {
+            throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
+        }
+        return locale;
     }
 
     async private void DBGetLanguage() {

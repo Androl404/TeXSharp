@@ -17,8 +17,9 @@ class Window {
     }
     private Dictionary<string, SourceEditor> editors;
     private string active_editor;
-
     private ButtonBar button_bar;
+    private Gtk.ScrolledWindow PDFViewer;
+    private Gtk.ScrolledWindow TextEditor;
 
     // Constructor of the windows
     // Takes title, size, and flag from event in Main
@@ -34,7 +35,11 @@ class Window {
         grid.SetHexpand(true);
         grid.SetVexpand(true);
         this.grid.ColumnSpacing = 10;
+        this.window.SetChild(this.grid); // Set the grid as the window's child
         this.editors = new Dictionary<string, SourceEditor>();
+        this.TextEditor = this.MakeTextEditor();
+        this.PDFViewer = this.MakePDFViewer(null);
+        this.MakeButtonBar();
     }
 
     // To construct the header bar of the window
@@ -92,8 +97,11 @@ class Window {
     // To create the PDF viewer and returns the associated ScrolledWindow
     public Gtk.ScrolledWindow MakePDFViewer(string? pdf_path) {
         // IronPdf.PdfDocument pdf = new IronPdf.PdfDocument("./assets/pdf_test.pdf");
-        if (pdf_path is null)
-            return Gtk.ScrolledWindow.New();
+        if (pdf_path is null) {
+            var scrolled = Gtk.ScrolledWindow.New();
+            this.grid.Attach(scrolled, 1, 1, 1, 1); // Spans 3 columns in the third row/column
+            return scrolled;
+        }
         IronPdf.PdfDocument pdf = new IronPdf.PdfDocument(pdf_path);
 
         string path = "";
@@ -134,10 +142,11 @@ class Window {
 
     public void MakeButtonBar() {
         var main_box = new ButtonBar();
-        main_box.AddButton("save", Gio.ThemedIcon.New("document-save-symbolic"), GetFunc("save"));
-        main_box.AddButton("open", Gio.ThemedIcon.New("document-open-symbolic"), GetFunc("open"));
-        main_box.AddButton("compile", Gio.ThemedIcon.New("media-playback-start-symbolic"), GetFunc("compile"));
+        main_box.AddButton("save", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-save-symbolic")), GetFunc("save"));
+        main_box.AddButton("open", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-open-symbolic")), GetFunc("open"));
+        main_box.AddButton("compile", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("media-playback-start-symbolic")), GetFunc("compile"));
         main_box.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));
+        main_box.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
         this.grid.Attach(main_box.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
@@ -156,7 +165,7 @@ class Window {
             } finally {
                 open_dialog.Dispose();
                 if (System.IO.File.Exists(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf"))
-                    this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
+                    this.PDFViewer = this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
             }
         };
 
@@ -194,7 +203,7 @@ class Window {
             await func_save(sender, args);
             if (this.editors[this.active_editor].GetFileExists()) {
                 var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editors[this.active_editor].GetPath(), 50000);
-                this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
+                this.PDFViewer = this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
             } else {
                 // TODO: Make a graphical popup window in case of error
                 new DialogWindow(Globals.lan.ServeTrad("not_saved_cannot_compile"), Gio.ThemedIcon.New("dialog-warning-symbolic"), Globals.lan.ServeTrad("warning"), this.window);
@@ -230,6 +239,20 @@ class Window {
             }
         };
 
+        var func_toogle_settings = async (object? sender, EventArgs args) => {
+            if (!Globals.settings.GetShowing()) {
+                Globals.settings.OnToggle();
+                this.grid.Remove(this.PDFViewer);
+                this.grid.Attach(Globals.settings.GetScrolledWindow(), 1, 1, 1, 1);
+                // this.grid.AttachNextTo(this.settings.GetScrolledWindow(), this.TextEditor, Gtk.PositionType.Right, 1, 1);
+                Globals.settings.SetShowing(true);
+            } else {
+                this.grid.Remove(Globals.settings.GetScrolledWindow());
+                this.grid.Attach(this.PDFViewer, 1, 1, 1, 1); // Spans 3 columns in the third row/column
+                Globals.settings.SetShowing(false);
+            }
+        };
+
         switch (function) {
         case "open":
             return func_open;
@@ -243,6 +266,8 @@ class Window {
             return func_about;
         case "vim":
             return func_vim;
+        case "toogle_settings":
+            return func_toogle_settings;
         default:
             return null;
         }
