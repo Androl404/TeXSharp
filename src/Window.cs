@@ -126,13 +126,13 @@ class Window {
 
     public void MakeButtonBar() {
         var main_box = new ButtonBar();
-        main_box.AddButton("save", Gio.ThemedIcon.New("document-save-symbolic"), GetFunc("save"));
+        main_box.AddButton("save", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-save-symbolic")), GetFunc("save"));
         main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>S", "saveAction", GetFunc("save"), this.sender);
 
-        main_box.AddButton("open", Gio.ThemedIcon.New("document-open-symbolic"), GetFunc("open"));
+        main_box.AddButton("open", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-open-symbolic")), GetFunc("open"));
         main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>O", "openAction", GetFunc("open"), this.sender);
 
-        main_box.AddButton("compile", Gio.ThemedIcon.New("media-playback-start-symbolic"), GetFunc("compile"));
+        main_box.AddButton("compile", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("media-playback-start-symbolic")), GetFunc("compile"));
         main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>C", "compileAction", GetFunc("compile"), this.sender);
 
         main_box.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));

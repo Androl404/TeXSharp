@@ -35,7 +35,7 @@ class ButtonBar {
         // The scope is the level at which the shortcuts are detected. Wet set it to Local to say the shortcut will be handled by the widget it is added to
         var shortcutController = Gtk.ShortcutController.New();
         shortcutController.SetScope(Gtk.ShortcutScope.Local);
-        widget.AddController(shortcutContrller);
+        widget.AddController(shortcutController);
 
         // Create a new CallbackAction for the specific actionName
         // The CallbackAction is a simple action that calls a function when triggered
