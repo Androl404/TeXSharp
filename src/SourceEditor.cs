@@ -18,24 +18,20 @@ class SourceEditor {
         get { return this.file_exists; }
     }
     private LanguageManager language_manager;
-
     private GtkSource.VimIMContext VIMmode = GtkSource.VimIMContext.New();
     public GtkSource.VimIMContext _VIMmode {
         get { return this.VIMmode; }
     }
-
     private Gtk.EventControllerKey VIMeventControllerKey = Gtk.EventControllerKey.New();
     public Gtk.EventControllerKey _VIMeventControllerKey {
         get { return this.VIMeventControllerKey; }
     }
-
     // 0 if vim mode is disabled, 1 if vim mode is enabled (default is disabled)
     private bool VIMmodeEnabled = false;
     public bool _VIMmodeEnabled {
         get { return this.VIMmodeEnabled; }
         set { this.VIMmodeEnabled = value; }
     }
-
     private Gtk.Entry TextEntry = new Gtk.Entry();
     public Gtk.Entry _TextEntry {
         get { return this.TextEntry; }
