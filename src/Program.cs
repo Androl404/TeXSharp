@@ -1,6 +1,6 @@
 ﻿using System;
 using Gtk;
-using Gio;
+using GtkSource;
 
 class Program {
     public static int Main(string[] args) {

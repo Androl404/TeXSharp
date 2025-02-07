@@ -22,6 +22,8 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
+    - name: Update the repositories
+      run: sudo apt update
     - name: Download GTK library
       run: sudo apt install -y libgtk-4-dev libgtk-4-bin libgtk-4-1 libgtksourceview-5-0
     - name: Restore dependencies
