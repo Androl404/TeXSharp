@@ -4,6 +4,7 @@ using Gtk;
 using GtkSource;
 using Gio;
 using IronPdf;
+using GLib;
 
 class Window {
     private Gio.Application sender;        // The sender args on window activation
@@ -71,20 +72,11 @@ class Window {
 
         this.editors[this.active_editor]._TextEntry.Hide();
 
-        /*
-        var VimShortcutController = Gtk.ShortcutController.New();
-        VimShortcutController.SetScope(Gtk.ShortcutScope.Global);
-        editor_view.AddController(VimShortcutController);
-
-        var VimShortcut = Gtk.Shortcut.New(Gtk.ShortcutTrigger.ParseString("<Control><Shift>V"), Gtk.ShortcutAction.Activate(Gtk.ShortcutActionFlags.Exclusive, this.button_bar._Button, null));
-        */
         this.grid.Attach(this.editors[this.active_editor]._TextEntry, 0, 2, 1, 1);
 
         // Add TextView to ScrolledWindow
         scrolled.SetChild(editor_view);
         this.grid.Attach(scrolled, 0, 1, 1, 1); // Spans 2 columns in the third row
-
-        // this.grid.AttachNextTo(this.editors["new1"]._TextEntry, scrolled, PositionType.Bottom, 1, 1);
 
         return scrolled;
     }
@@ -135,9 +127,16 @@ class Window {
     public void MakeButtonBar() {
         var main_box = new ButtonBar();
         main_box.AddButton("save", Gio.ThemedIcon.New("document-save-symbolic"), GetFunc("save"));
+        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>S", "saveAction", GetFunc("save"), this.sender);
+
         main_box.AddButton("open", Gio.ThemedIcon.New("document-open-symbolic"), GetFunc("open"));
+        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>O", "openAction", GetFunc("open"), this.sender);
+
         main_box.AddButton("compile", Gio.ThemedIcon.New("media-playback-start-symbolic"), GetFunc("compile"));
+        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>C", "compileAction", GetFunc("compile"), this.sender);
+
         main_box.AddButton("vim", Gio.ThemedIcon.New("applications-system-symbolic"), GetFunc("vim"));
+        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>V", "vimAction", GetFunc("vim"), this.sender);
         this.grid.Attach(main_box.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
