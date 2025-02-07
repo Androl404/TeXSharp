@@ -143,7 +143,7 @@ class Window {
         main_box.AddButton("compile", Gio.ThemedIcon.New("media-playback-start-symbolic"), GetFunc("compile"));
         main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>C", "compileAction", GetFunc("compile"), this.sender);
 
-        main_box.AddButton("vim", Gio.ThemedIcon.New("applications-system-symbolic"), GetFunc("vim"));
+        main_box.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));
         main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>V", "vimAction", GetFunc("vim"), this.sender);
         this.grid.Attach(main_box.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
