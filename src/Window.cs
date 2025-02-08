@@ -59,7 +59,7 @@ class Window
         // TODO: make the menu bar with all the options (file, edit, etc.)
 
         header_bar.AddMenuButon(Globals.lan.ServeTrad("file"), false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], [GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("new"), Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], [GetFunc("new"), GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
 
         header_bar.AddMenuButon("LaTeX", false);
         header_bar.AddButtonInMenu([Globals.lan.ServeTrad("compile")], [GetFunc("compile")], false, true);
@@ -233,6 +233,7 @@ class Window
             await func_save(sender, args);
             this.editors[this.active_editor].NewFile();
             this.window.SetTitle($"{Globals.lan.ServeTrad("new_file")} - TeXSharp");
+            this.grid.Remove(this.PDFViewer);
         };
 
         var func_quit = async (object? sender, EventArgs args) =>

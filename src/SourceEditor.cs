@@ -70,10 +70,10 @@ class SourceEditor
 
     public void NewFile()
     {
-        this.path = null;
+        this.path = "";
         this.file_exists = false;
         this.buffer.Text = "";
-        this.SetBufferLanguage();
+        // this.SetBufferLanguage();
     }
 
     public void OpenFile(string? path)
