@@ -39,32 +39,29 @@ class SourceEditor {
 
     public SourceEditor(string path, Gtk.Grid grid) {
         // TODO: Take in account the path to open an instance of an editor with an existing file
+        this.path = "";
         this.buffer = GtkSource.Buffer.New(null);
         this.view = GtkSource.View.NewWithBuffer(this.buffer);
         view.Monospace = true;
         view.ShowLineNumbers = true;
         view.HighlightCurrentLine = true;
         view.SetTabWidth(4);
-
-        // TODO : hide the entry and only show it when the user presses ":" in the editor
-        // And hide it when the user presses "Enter" or "Escape"
-        // And add a button that activate/deactivate the VIM mode + a shortcut like "Ctrl + Shift + V" for easier manipulation
-        // Finally, add all this lines for the VIM mode inside a dedicated function to make the code cleaner
-
         var settings = Gtk.Settings.GetDefault();
         if (settings?.GtkApplicationPreferDarkTheme == true || settings?.GtkThemeName?.ToLower()?.Contains("dark") == true)
             this.buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme("Adwaita-dark"));
         this.language_manager = GtkSource.LanguageManager.New();
     }
 
-    public void OpenFile(string path) {
+    public void OpenFile(string? path) {
+        if (path is null) throw new System.ArgumentNullException("String path is null, cannot open file");
         this.path = path;
         this.file_exists = true;
         this.buffer.Text = System.IO.File.ReadAllText(path);
         this.SetBufferLanguage();
     }
 
-    public void SaveFile(string path) {
+    public void SaveFile(string? path) {
+        if (path is null) throw new System.ArgumentNullException("String path is null, cannot save file");
         if (!this.file_exists) {
             this.path = path;
         }

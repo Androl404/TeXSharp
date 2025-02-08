@@ -4,7 +4,7 @@ using GtkSource;
 
 class Program {
     public static int Main(string[] args) {
-        GtkSource.Module.Initialize(); // Pour initialiser l'éditeur de texte
+        GtkSource.Module.Initialize(); // To initialize the text editor
         var application = Gtk.Application.New("com.github.TeXSharp", Gio.ApplicationFlags.FlagsNone);
         application.OnActivate += (sender, args) => {
             // Create main Window

@@ -2,14 +2,16 @@ using System;
 using Microsoft.Data.Sqlite;
 
 public class Languages {
-    private Dictionary<string, string> Traduction;
+    private Dictionary<string, string>? Traduction;
     private string DBPath;
     private string locale;
-    private string? language;
+    private string language;
 
     public Languages(string DBPath) {
         this.DBPath = DBPath;
         this.AfterConstruction();
+        this.locale = "";
+        this.language = "";
     }
 
     async public void AfterConstruction() {
@@ -95,6 +97,7 @@ public class Languages {
     }
 
     public string ServeTrad(string field) {
+        if (this.Traduction is null) throw new System.ArgumentNullException("Dictionnary translation is null");
         return this.Traduction[field];
     }
 }
