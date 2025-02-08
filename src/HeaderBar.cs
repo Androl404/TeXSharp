@@ -8,7 +8,7 @@ class AppHeaderBar {
     public Gtk.HeaderBar _HeaderBar {
         get { return this.headerbar; }
     }
-    private Gtk.MenuButton menu_button;
+    private Gtk.MenuButton? menu_button;
 
     public AppHeaderBar() { this.headerbar = Gtk.HeaderBar.New(); }
 
@@ -30,10 +30,9 @@ class AppHeaderBar {
 
     // TODO: Refactor this function in order to maintain an access to the Button in case we nedd to aplly them a method
     // Functions passed into the array must be async
-    public void AddButtonInMenu(string[] label, Func<object?, EventArgs, System.Threading.Tasks.Task>[] funcs, bool frame, bool pack_start) {
+    public void AddButtonInMenu(string[] label, Func<object?, EventArgs, System.Threading.Tasks.Task>?[] funcs, bool frame, bool pack_start) {
         if (label.Length != funcs.Length)
             throw new System.OverflowException("Lenght of two tables are not equal !");
-
         var pop_file = Gtk.Popover.New();                        // New popover menu
         var box_file = Gtk.Box.New(Gtk.Orientation.Vertical, 0); // New box to put in the popover menu
         for (int i = 0; i < label.Length; ++i) {
@@ -48,6 +47,7 @@ class AppHeaderBar {
             box_file.Append(button_file_open); // Ajouter le bouton à la box
         }
         pop_file.SetChild(box_file);
+        if (this.menu_button is null) throw new System.ArgumentNullException("Menu-button is null.");
         this.menu_button.SetPopover(pop_file);
         if (pack_start)
             this.headerbar.PackStart(this.menu_button);

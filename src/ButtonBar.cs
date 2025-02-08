@@ -15,7 +15,8 @@ class ButtonBar {
         this.button_list = new Dictionary<string, Gtk.Button>();
     }
 
-    public void AddButton(string label, Gtk.Image image, Func<object?, EventArgs, System.Threading.Tasks.Task> func) {
+    public void AddButton(string label, Gtk.Image image, Func<object?, EventArgs, System.Threading.Tasks.Task>? func) {
+        if (func is null) throw new System.ArgumentNullException("The function passed as argument is null.");
         if (this.button_list.ContainsKey(label))
             throw new System.FieldAccessException("The key already exists in the dictionnary !");
         var button = Gtk.Button.New(); // We create a button
@@ -29,7 +30,8 @@ class ButtonBar {
         this.box.Append(button);
     }
 
-    public void AddShortcut(Gtk.Widget widget, string trigger, string actionName, Func<object?, EventArgs, System.Threading.Tasks.Task> func, Object? sender) {
+    public void AddShortcut(Gtk.Widget widget, string trigger, string actionName, Func<object?, EventArgs, System.Threading.Tasks.Task>? func, Object? sender) {
+        if (func is null) throw new System.ArgumentNullException("The function passed as argument is null.");
         // Create a ShortcutController and set its scope
         // The ShortcutController, as the name suggests, is here to detect and control shortcuts
         // The scope is the level at which the shortcuts are detected. Wet set it to Local to say the shortcut will be handled by the widget it is added to
