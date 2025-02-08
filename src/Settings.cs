@@ -7,6 +7,9 @@ using Gtk;
 
 public class SettingsValues {
     public string language { get; set; }
+    public SettingsValues() {
+        this.language = "";
+    }
 }
 
 public class Settings {
@@ -32,6 +35,7 @@ public class Settings {
         this.scrolled.SetChild(this.box);
         this.showing = false;
         this.toggled = false;
+        this.settings_values = new SettingsValues();
         this.InitSettingsValues();
     }
 
@@ -47,7 +51,7 @@ public class Settings {
             } else { // Unix-based OS
                 path = Environment.GetEnvironmentVariable("HOME") + "/.config/texsharp/config.json";
             }
-            this.settings_values = JsonSerializer.Deserialize<SettingsValues>(System.IO.File.ReadAllText(path));
+            this.settings_values = JsonSerializer.Deserialize<SettingsValues>(System.IO.File.ReadAllText(path)) ?? new SettingsValues();
         }
     }
 
@@ -95,7 +99,7 @@ public class Settings {
             path = appdata + "/Local/TeXSharp/config.json";
         }
         else { // Unix-based OS
-            string home_user = Environment.GetEnvironmentVariable("HOME");
+            string home_user = Environment.GetEnvironmentVariable("HOME") ?? "/home/";
             System.IO.Directory.CreateDirectory(home_user + "/.config");
             System.IO.Directory.CreateDirectory(home_user + "/.config/texsharp");
             path = home_user + "/.config/texsharp/config.json";

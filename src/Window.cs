@@ -38,8 +38,10 @@ class Window {
         this.grid.ColumnSpacing = 10;
         this.window.SetChild(this.grid); // Set the grid as the window's child
         this.editors = new Dictionary<string, SourceEditor>();
+        this.active_editor = "";
         this.TextEditor = this.MakeTextEditor();
         this.PDFViewer = this.MakePDFViewer(null);
+        this.button_bar = new ButtonBar();
         this.MakeButtonBar();
     }
 
@@ -143,39 +145,38 @@ class Window {
     }
 
     public void MakeButtonBar() {
-        var main_box = new ButtonBar();
-        main_box.AddButton("new", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-new-symbolic")), GetFunc("new"));
-        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>N", "newFileAction", GetFunc("new"), this.sender);
+        this.button_bar.AddButton("new", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-new-symbolic")), GetFunc("new"));
+        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>N", "newFileAction", GetFunc("new"), this.sender);
 
-        main_box.AddButton("save", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-save-symbolic")), GetFunc("save"));
-        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>S", "saveAction", GetFunc("save"), this.sender);
+        this.button_bar.AddButton("save", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-save-symbolic")), GetFunc("save"));
+        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>S", "saveAction", GetFunc("save"), this.sender);
 
-        main_box.AddButton("open", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-open-symbolic")), GetFunc("open"));
-        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>O", "openAction", GetFunc("open"), this.sender);
+        this.button_bar.AddButton("open", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-open-symbolic")), GetFunc("open"));
+        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>O", "openAction", GetFunc("open"), this.sender);
 
-        main_box.AddButton("compile", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("media-playback-start-symbolic")), GetFunc("compile"));
-        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>C", "compileAction", GetFunc("compile"), this.sender);
+        this.button_bar.AddButton("compile", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("media-playback-start-symbolic")), GetFunc("compile"));
+        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>C", "compileAction", GetFunc("compile"), this.sender);
 
-        main_box.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));
-        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>V", "vimAction", GetFunc("vim"), this.sender);
+        this.button_bar.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));
+        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>V", "vimAction", GetFunc("vim"), this.sender);
 
-        main_box.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
-        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.sender);
-        this.grid.Attach(main_box.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
+        this.button_bar.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
+        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.sender);
+        this.grid.Attach(this.button_bar.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
-    private Func<object?, EventArgs, System.Threading.Tasks.Task> GetFunc(string function) {
-
+    private Func<object?, EventArgs, System.Threading.Tasks.Task>? GetFunc(string function) {
         var func_open  = async (object? sender, EventArgs args) => {
             var open_dialog = Gtk.FileDialog.New();
             try {
                 open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
                 var open_task = open_dialog.OpenAsync(this.window);
                 await open_task;
+                if (open_task.Result is null) throw new System.ArgumentNullException("Opening task is null.");
                 this.editors[this.active_editor].OpenFile(open_task.Result.GetPath());
                 this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
             } catch (Exception e) {
-                Console.WriteLine("WARNING: Dismissed by user");
+                Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
                 // new DialogWindow($"{Globals.lan.ServeTrad("cannot_open")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
             } finally {
                 open_dialog.Dispose();
@@ -191,13 +192,14 @@ class Window {
                     save_dialog.SetTitle(Globals.lan.ServeTrad("save_file"));
                     var save_task = save_dialog.SaveAsync(this.window);
                     await save_task;
+                    if (save_task.Result is null) throw new System.ArgumentNullException("Saving task is null.");
                     this.editors[this.active_editor].SaveFile(save_task.Result.GetPath());
                 } else {
                     this.editors[this.active_editor].SaveFile(this.editors[this.active_editor]._Path);
                 }
                 this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
             } catch (Exception e) {
-                Console.WriteLine("WARNING: Dismissed by user");
+                Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
                 // new DialogWindow($"{Globals.lan.ServeTrad("cannot_save")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
             } finally {
                 save_dialog.Dispose();
