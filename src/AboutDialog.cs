@@ -3,9 +3,6 @@ using System.Reflection;
 using GdkPixbuf;
 using GObject;
 
-// No need for a namespace
-// namespace TAboutDialog;
-
 public class TAboutDialog : Gtk.AboutDialog {
     public TAboutDialog(string Name) {
         Authors = new[] { "Johann Plasse", "Andrei Zeucianu" };
@@ -25,7 +22,7 @@ public class TAboutDialog : Gtk.AboutDialog {
             var pixbuf = PixbufLoader.FromBytes(bytes);
             return Gdk.Texture.NewForPixbuf(pixbuf);
         } catch (Exception e) {
-            Console.WriteLine($"Unable to load image resource '{resourceName}': {e.Message}" + e);
+            Console.WriteLine($"Unable to load image resource '{resourceName}': {e.Message}\n" + e.StackTrace);
             return null;
         }
     }

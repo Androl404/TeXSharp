@@ -52,11 +52,12 @@ class SourceEditor {
         this.language_manager = GtkSource.LanguageManager.New();
     }
 
-    public void NewFile() {
-        this.path = null;
+    public void NewFile()
+    {
+        this.path = "";
         this.file_exists = false;
         this.buffer.Text = "";
-        this.SetBufferLanguage();
+        // this.SetBufferLanguage();
     }
 
     public void OpenFile(string? path) {
