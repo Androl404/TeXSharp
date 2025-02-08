@@ -61,6 +61,13 @@ class SourceEditor {
         this.language_manager = GtkSource.LanguageManager.New();
     }
 
+    public void NewFile() {
+        this.path = null;
+        this.file_exists = false;
+        this.buffer.Text = "";
+        this.SetBufferLanguage();
+    }
+
     public void OpenFile(string path) {
         this.path = path;
         this.file_exists = true;

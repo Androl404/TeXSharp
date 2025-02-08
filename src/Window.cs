@@ -76,8 +76,6 @@ class Window {
 
         // Add TextView to ScrolledWindow
         scrolled.SetChild(editor_view);
-        this.grid.Attach(scrolled, 0, 1, 1, 1); // Spans 2 columns in the third row
-
         return scrolled;
     }
 
@@ -126,6 +124,9 @@ class Window {
 
     public void MakeButtonBar() {
         var main_box = new ButtonBar();
+        main_box.AddButton("new", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-new-symbolic")), GetFunc("new"));
+        main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>N", "newFileAction", GetFunc("new"), this.sender);
+
         main_box.AddButton("save", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-save-symbolic")), GetFunc("save"));
         main_box.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>S", "saveAction", GetFunc("save"), this.sender);
 
@@ -141,6 +142,7 @@ class Window {
     }
 
     private Func<object?, EventArgs, System.Threading.Tasks.Task> GetFunc(string function) {
+
         var func_open  = async (object? sender, EventArgs args) => {
             var open_dialog = Gtk.FileDialog.New();
             try {
@@ -177,6 +179,12 @@ class Window {
             } finally {
                 save_dialog.Dispose();
             }
+        };
+
+        var func_newFile = async (object? sender, EventArgs args) => {
+            await func_save(sender, args);
+            this.editors[this.active_editor].NewFile();
+            this.window.SetTitle($"{Globals.lan.ServeTrad("new_file")} - TeXSharp");
         };
 
         var func_quit = async (object? sender, EventArgs args) => {
@@ -230,6 +238,8 @@ class Window {
         };
 
         switch (function) {
+        case "new":
+            return func_newFile;
         case "open":
             return func_open;
         case "save":
