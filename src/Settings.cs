@@ -4,11 +4,14 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Gtk;
+using GtkSource;
 
 public class SettingsValues {
     public string language { get; set; }
+    public string editor_theme { get; set; }
     public SettingsValues() {
         this.language = "";
+        this.editor_theme = "";
     }
 }
 
@@ -43,6 +46,11 @@ public class Settings {
         if (!this.SettingExists()) {
             this.settings_values = new SettingsValues();
             this.settings_values.language = "English";
+            var settings = Gtk.Settings.GetDefault();
+            if (settings?.GtkApplicationPreferDarkTheme == true || settings?.GtkThemeName?.ToLower()?.Contains("dark") == true )
+                this.settings_values.editor_theme = "Adwaita-dark";
+            else
+                this.settings_values.editor_theme = "Adwaita";
             this.SaveSettings();
         } else {
             string path = "";
@@ -55,9 +63,10 @@ public class Settings {
         }
     }
 
-    public void OnToggle() {
+    public void OnToggle(SourceEditor editor) {
         if (!this.toggled) {
-            AddLanguagesOptions();
+            this.AddLanguagesOptions();
+            this.AddEditorThemeOptions(editor);
             this.toggled = true;
         }
     }
@@ -80,6 +89,26 @@ public class Settings {
         lan_box.Append(label);
         lan_box.Append(drop_down);
         this.box.Append(lan_box);
+    }
+
+    private void AddEditorThemeOptions(SourceEditor editor) {
+        var scheme_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 2);
+        var label = Gtk.Label.New(Globals.lan.ServeTrad("choose_theme"));
+        string[] themes = { "Adwaita-dark", "classic-dark", "cobalt-light", "kate-dark", "oblivion", "solarized-light", "tango", "Yaru", "Adwaita", "classic", "cobalt", "kate", "solarized-dark", "Yaru-dark" };
+        var drop_down = Gtk.DropDown.NewFromStrings(themes);
+        for (uint i = 0; i < themes.Length; ++i) {
+            if (themes[i] == this.settings_values.editor_theme) {
+                drop_down.SetSelected(i);
+            }
+        }
+        drop_down.OnNotify += (sender, args) => {
+            this.settings_values.editor_theme = themes[drop_down.GetSelected()];
+            editor.ChangeEditorTheme(this.settings_values.editor_theme);
+            this.SaveSettings();
+        };
+        scheme_box.Append(label);
+        scheme_box.Append(drop_down);
+        this.box.Append(scheme_box);
     }
 
     private bool SettingExists() {
