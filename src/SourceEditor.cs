@@ -1,6 +1,6 @@
 using GtkSource;
 
-class SourceEditor {
+public class SourceEditor {
     private GtkSource.Buffer buffer;
     public GtkSource.Buffer _Buffer {
         get { return this.buffer; } // get method
@@ -46,10 +46,13 @@ class SourceEditor {
         view.ShowLineNumbers = true;
         view.HighlightCurrentLine = true;
         view.SetTabWidth(4);
-        var settings = Gtk.Settings.GetDefault();
-        if (settings?.GtkApplicationPreferDarkTheme == true || settings?.GtkThemeName?.ToLower()?.Contains("dark") == true)
-            this.buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme("Adwaita-dark"));
+        this.buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(Globals.settings._Settings_values.editor_theme));
         this.language_manager = GtkSource.LanguageManager.New();
+    }
+
+    public void ChangeEditorTheme(string theme)
+    {
+        this.buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(theme));
     }
 
     public void NewFile()
