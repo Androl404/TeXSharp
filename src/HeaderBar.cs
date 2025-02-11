@@ -47,7 +47,8 @@ class AppHeaderBar {
             box_file.Append(button_file_open); // Ajouter le bouton à la box
         }
         pop_file.SetChild(box_file);
-        if (this.menu_button is null) throw new System.ArgumentNullException("Menu-button is null.");
+        if (this.menu_button is null)
+            throw new System.ArgumentNullException("Menu-button is null.");
         this.menu_button.SetPopover(pop_file);
         if (pack_start)
             this.headerbar.PackStart(this.menu_button);

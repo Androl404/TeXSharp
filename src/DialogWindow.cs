@@ -20,7 +20,7 @@ class DialogWindow {
         // this.window.SetDefaultSize(500, 200);
         this.window.SetTitle(type + " - TeXSharp");
         this.window.SetChild(main_box); // Make the dialog window modal to block the parent window
-        this.window.SetModal(true); // Define parent of dialog window
+        this.window.SetModal(true);     // Define parent of dialog window
         this.window.SetTransientFor(parent);
         this.window.Present();
     }
