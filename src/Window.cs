@@ -57,10 +57,7 @@ class Window {
         header_bar.AddButtonInMenu([Globals.lan.ServeTrad("new"), Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], [GetFunc("new"), GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
 
         header_bar.AddMenuButon("LaTeX", false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("compile")],
-                                   [GetFunc("compile")],
-                                   false,
-                                   true);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("compile")], [GetFunc("compile")], false, true);
 
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
@@ -182,7 +179,8 @@ class Window {
                 open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
                 var open_task = open_dialog.OpenAsync(this.window);
                 await open_task;
-                if (open_task.Result is null) throw new System.ArgumentNullException("Opening task is null.");
+                if (open_task.Result is null)
+                    throw new System.ArgumentNullException("Opening task is null.");
                 this.editors[this.active_editor].OpenFile(open_task.Result.GetPath());
                 this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
             } catch (Exception e) {
@@ -202,7 +200,8 @@ class Window {
                     save_dialog.SetTitle(Globals.lan.ServeTrad("save_file"));
                     var save_task = save_dialog.SaveAsync(this.window);
                     await save_task;
-                    if (save_task.Result is null) throw new System.ArgumentNullException("Saving task is null.");
+                    if (save_task.Result is null)
+                        throw new System.ArgumentNullException("Saving task is null.");
                     this.editors[this.active_editor].SaveFile(save_task.Result.GetPath());
                 } else {
                     this.editors[this.active_editor].SaveFile(this.editors[this.active_editor]._Path);

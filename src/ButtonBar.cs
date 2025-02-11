@@ -63,8 +63,16 @@ class ButtonBar {
     }
 
     // Manuals getter
-    public Gtk.Box GetBox() {
-        return this.box;
+    public Gtk.Box GetBox() { return this.box; }
+    public Gtk.Button GetButton(string label) {
+        if (!this.button_list.ContainsKey(label))
+            throw new System.FieldAccessException("The key does not exists in the dictionnary !");
+        return this.button_list[label];
+    }
+    public Gtk.CallbackAction GetAction(string actionName) {
+        if (!this.actions.ContainsKey(actionName))
+            throw new System.FieldAccessException("The key does not exists in the dictionnary !");
+        return this.actions[actionName];
     }
     public Gtk.Button GetButton(string label) {
         if (!this.button_list.ContainsKey(label)) throw new System.FieldAccessException("The key does not exists in the dictionnary !");
