@@ -128,6 +128,19 @@ class Window {
             // We add the gesture zoom to the box so that the entire box is rescaled when zooming, and not the image alone
             image_box.AddController(zoom);
             // And we add each image to the box
+
+        // // Usage of Gtk.Picture widget instead of Gtk.Image
+        // var imagePdf = Gtk.Picture.New();
+        // for (int i = 1; i <= pdf.PageCount; ++i) {
+        //     imagePdf = Gtk.Picture.NewForFilename(path + i + ".png");
+        //     // Make the image fill the available space horizontally
+        //     imagePdf.SetHexpand(true);
+        //     imagePdf.SetContentFit(ContentFit.Fill);
+        //     // IMPORTANT: this need to be on 'false' or else, the scrolled window will not work
+        //     imagePdf.SetCanShrink(false);
+        //     // Keep the aspect ratio of the image, which avoid the image to be stretched when resizing the window
+        //     imagePdf.SetKeepAspectRatio(true);
+
             image_box.Append(imagePdf);
         }
 

@@ -83,12 +83,13 @@ public class Languages {
             await using var dataReader = await cmd.ExecuteReaderAsync();
 
             this.Traduction = new Dictionary<string, string>();
-            if (!dataReader.HasRows) throw new System.IndexOutOfRangeException("Database response is empty");
+            if (!dataReader.HasRows)
+                throw new System.IndexOutOfRangeException("Database response is empty");
             while (await dataReader.ReadAsync()) {
                 string? mkey = Convert.ToString(dataReader["field"]); // (string)
                 string? mvalue = Convert.ToString(dataReader["traduction"]);
                 if (mkey != null && mvalue != null)
-                this.Traduction.Add(mkey, mvalue);
+                    this.Traduction.Add(mkey, mvalue);
             }
             await conn.CloseAsync();
         } catch (Exception e) {
@@ -97,7 +98,8 @@ public class Languages {
     }
 
     public string ServeTrad(string field) {
-        if (this.Traduction is null) throw new System.ArgumentNullException("Dictionnary translation is null");
+        if (this.Traduction is null)
+            throw new System.ArgumentNullException("Dictionnary translation is null");
         return this.Traduction[field];
     }
 }

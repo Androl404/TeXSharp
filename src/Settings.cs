@@ -47,7 +47,7 @@ public class Settings {
             this.settings_values = new SettingsValues();
             this.settings_values.language = "English";
             var settings = Gtk.Settings.GetDefault();
-            if (settings?.GtkApplicationPreferDarkTheme == true || settings?.GtkThemeName?.ToLower()?.Contains("dark") == true )
+            if (settings?.GtkApplicationPreferDarkTheme == true || settings?.GtkThemeName?.ToLower()?.Contains("dark") == true)
                 this.settings_values.editor_theme = "Adwaita-dark";
             else
                 this.settings_values.editor_theme = "Adwaita";
@@ -126,8 +126,7 @@ public class Settings {
             string appdata = Environment.ExpandEnvironmentVariables("%appdata%");
             System.IO.Directory.CreateDirectory(appdata + "/Local/TeXSharp/");
             path = appdata + "/Local/TeXSharp/config.json";
-        }
-        else { // Unix-based OS
+        } else { // Unix-based OS
             string home_user = Environment.GetEnvironmentVariable("HOME") ?? "/home/";
             System.IO.Directory.CreateDirectory(home_user + "/.config");
             System.IO.Directory.CreateDirectory(home_user + "/.config/texsharp");
@@ -137,15 +136,9 @@ public class Settings {
     }
 
     // Manuals getters
-    public Gtk.ScrolledWindow GetScrolledWindow() {
-        return this.scrolled;
-    }
-    public bool GetShowing() {
-        return this.showing;
-    }
+    public Gtk.ScrolledWindow GetScrolledWindow() { return this.scrolled; }
+    public bool GetShowing() { return this.showing; }
 
     // Manuels setters
-    public void SetShowing(bool is_showing) {
-        this.showing = is_showing;
-    }
+    public void SetShowing(bool is_showing) { this.showing = is_showing; }
 }
