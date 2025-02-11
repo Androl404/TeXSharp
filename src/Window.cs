@@ -157,8 +157,7 @@ class Window {
     }
 
     private Func<object?, EventArgs, System.Threading.Tasks.Task>? GetFunc(string function) {
-        var func_open = async (object? sender, EventArgs args) =>
-        {
+        var func_open = async (object? sender, EventArgs args) => {
             var open_dialog = Gtk.FileDialog.New();
             try {
                 open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
@@ -178,8 +177,7 @@ class Window {
             }
         };
 
-        var func_save = async (object? sender, EventArgs args) =>
-        {
+        var func_save = async (object? sender, EventArgs args) => {
             var save_dialog = Gtk.FileDialog.New();
             try {
                 if (!this.editors[this.active_editor]._Exists) {
@@ -201,28 +199,24 @@ class Window {
             }
         };
 
-        var func_newFile = async (object? sender, EventArgs args) =>
-        {
+        var func_newFile = async (object? sender, EventArgs args) => {
             await func_save(sender, args);
             this.editors[this.active_editor].NewFile();
             this.window.SetTitle($"{Globals.lan.ServeTrad("new_file")} - TeXSharp");
             this.grid.Remove(this.PDFViewer);
         };
 
-        var func_quit = async (object? sender, EventArgs args) =>
-        {
+        var func_quit = async (object? sender, EventArgs args) => {
             this.window.Destroy();
         };
 
-        var func_about = async (object? sender, EventArgs args) =>
-        {
+        var func_about = async (object? sender, EventArgs args) => {
             var dialog = new TAboutDialog("TeXSharp");
             dialog.Application = (Gtk.Application)this.sender; // CS0030: Impossible de convertir le type 'Gtk.Button' en 'Gtk.Application'
             dialog.Show();
         };
 
-        var func_compile = async (object? sender, EventArgs args) =>
-        {
+        var func_compile = async (object? sender, EventArgs args) => {
             await func_save(sender, args);
             if (this.editors[this.active_editor].GetFileExists()) {
                 var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editors[this.active_editor].GetPath(), 50000);
@@ -233,8 +227,7 @@ class Window {
             }
         };
 
-        var func_vim = async (object? sender, EventArgs args) =>
-        {
+        var func_vim = async (object? sender, EventArgs args) => {
             // If the VIM mode is enabled (1), we disable it
             if (this.editors[this.active_editor]._VIMmodeEnabled) {
                 this.editors[this.active_editor]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.None);
@@ -243,7 +236,6 @@ class Window {
                 this.editors[this.active_editor]._VIMmodeEnabled = false;
             } else {
                 // If the VIM mode is disabled (0), we enable it
-
                 this.editors["new1"]._TextEntry.Show();
                 this.editors["new1"]._TextEntry.SetPlaceholderText("Vim command bar");
 
@@ -263,8 +255,7 @@ class Window {
             }
         };
 
-        var func_toogle_settings = async (object? sender, EventArgs args) =>
-        {
+        var func_toogle_settings = async (object? sender, EventArgs args) => {
             if (!Globals.settings.GetShowing()) {
                 Globals.settings.OnToggle(this.editors[this.active_editor]);
                 this.grid.Remove(this.PDFViewer);
