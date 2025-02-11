@@ -176,7 +176,7 @@ class Window {
     }
 
     private Func<object?, EventArgs, System.Threading.Tasks.Task>? GetFunc(string function) {
-        var func_open  = async (object? sender, EventArgs args) => {
+        var func_open = async (object? sender, EventArgs args) => {
             var open_dialog = Gtk.FileDialog.New();
             try {
                 open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
@@ -253,7 +253,6 @@ class Window {
                 this.editors[this.active_editor]._VIMmodeEnabled = false;
             } else {
                 // If the VIM mode is disabled (0), we enable it
-
                 this.editors["new1"]._TextEntry.Show();
                 this.editors["new1"]._TextEntry.SetPlaceholderText("Vim command bar");
 
