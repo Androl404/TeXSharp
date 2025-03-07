@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Gtk;
 using GtkSource;
+using Pango;
 
 public class SettingsValues {
     public string language { get; set; }
@@ -65,10 +66,23 @@ public class Settings {
 
     public void OnToggle(SourceEditor editor) {
         if (!this.toggled) {
+            this.AddMainTitle();
             this.AddLanguagesOptions();
             this.AddEditorThemeOptions(editor);
             this.toggled = true;
         }
+    }
+
+    private void AddMainTitle() {
+        var attr_list = Pango.AttrList.New();
+        var font = Pango.FontDescription.New();
+        font.SetWeight(Pango.Weight.Bold);
+        font.SetSize(20*Globals.PAGNO_SCALE);
+        var font_attribute = Pango.AttrFontDesc.New(font);
+        attr_list.Insert(font_attribute);
+        var label = Gtk.Label.New(Globals.lan.ServeTrad("settings"));
+        label.SetAttributes(attr_list);
+        this.box.Append(label);
     }
 
     async private void AddLanguagesOptions() {
