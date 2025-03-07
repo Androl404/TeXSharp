@@ -141,6 +141,9 @@ class Window {
             image_box.Append(imagePdf);
         }
 
+        // We remove whatever is in the grid before showing the PDF
+        this.grid.Remove(Globals.settings.GetScrolledWindow());
+
         // We put the PDF images into a scrollable element
         var scrolledPdf = Gtk.ScrolledWindow.New();
         scrolledPdf.SetHexpand(true);
