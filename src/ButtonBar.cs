@@ -6,12 +6,17 @@ class ButtonBar {
     public Gtk.Box _Box {
         get { return this.box; }
     }
+    private Gtk.Label status_bar;
+    public Gtk.Label _Status_bar {
+        get { return this.status_bar; }
+    }
     private Dictionary<string, Gtk.Button> button_list;
     private Dictionary<string, Gtk.CallbackAction> actions = new Dictionary<string, Gtk.CallbackAction>();
 
     public ButtonBar() {
         this.box = Gtk.Box.New(Gtk.Orientation.Horizontal, 0);
         this.button_list = new Dictionary<string, Gtk.Button>();
+        this.status_bar = Gtk.Label.New(Globals.lan.ServeTrad("status_bar_default"));
     }
 
     public void AddButton(string label, Gtk.Image image, Func<object?, EventArgs, System.Threading.Tasks.Task>? func) {
@@ -60,6 +65,11 @@ class ButtonBar {
 
         // Return true to indicate the action was handled
         return true;
+    }
+
+    public void AddStatusBar() {
+        this.box.Append(Gtk.Label.New("     "));
+        this.box.Append(this.status_bar);
     }
 
     // Manuals getter

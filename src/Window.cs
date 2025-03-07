@@ -145,7 +145,13 @@ class Window {
         }
 
         // We remove whatever is in the grid before showing the PDF
-        this.grid.Remove(Globals.settings.GetScrolledWindow());
+        if (Globals.settings.GetShowing()) {
+            var func = this.GetFunc("toogle_settings");
+            func(null, new EventArgs());
+        }
+
+        // We also clean the previous PDF file
+        this.grid.Remove(this.PDFViewer);
 
         // We put the PDF images into a scrollable element
         var scrolledPdf = Gtk.ScrolledWindow.New();
@@ -175,6 +181,8 @@ class Window {
 
         this.button_bar.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
         this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.sender);
+
+        this.button_bar.AddStatusBar();
         this.grid.Attach(this.button_bar.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
@@ -188,6 +196,7 @@ class Window {
                 if (open_task.Result is null)
                     throw new System.ArgumentNullException("Opening task is null.");
                 this.editors[this.active_editor].OpenFile(open_task.Result.GetPath());
+                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("file_opened") + " " + open_task.Result.GetPath() + ".");
                 this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
@@ -213,6 +222,7 @@ class Window {
                     this.editors[this.active_editor].SaveFile(this.editors[this.active_editor]._Path);
                 }
                 this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
+                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("file_saved") + " " + this.editors[this.active_editor].GetPath() + ".");
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
                 // new DialogWindow($"{Globals.lan.ServeTrad("cannot_save")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
@@ -225,6 +235,7 @@ class Window {
             await func_save(sender, args);
             this.editors[this.active_editor].NewFile();
             this.window.SetTitle($"{Globals.lan.ServeTrad("new_file")} - TeXSharp");
+            this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("new_file") + " " + Globals.lan.ServeTrad("created") + ".");
             this.grid.Remove(this.PDFViewer);
         };
 
@@ -241,7 +252,12 @@ class Window {
         var func_compile = async (object? sender, EventArgs args) => {
             await func_save(sender, args);
             if (this.editors[this.active_editor].GetFileExists()) {
+                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_started") + "...");
                 var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editors[this.active_editor].GetPath(), 50000);
+                if (process.ExitCode == 0)
+                    this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_finished") + ".");
+                else
+                    this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_finished") + " " + Globals.lan.ServeTrad("with_errors") + ".");
                 this.PDFViewer = this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
             } else {
                 // TODO: Make a graphical popup window in case of error
@@ -256,6 +272,7 @@ class Window {
                 this.editors[this.active_editor]._View.RemoveController(this.editors[this.active_editor]._VIMeventControllerKey);
                 this.editors[this.active_editor]._TextEntry.Hide();
                 this.editors[this.active_editor]._VIMmodeEnabled = false;
+                this.button_bar._Status_bar.SetLabel("VIM Mode " + Globals.lan.ServeTrad("desactivated") + ".");
             } else {
                 // If the VIM mode is disabled (0), we enable it
                 this.editors["new1"]._TextEntry.Show();
@@ -274,13 +291,14 @@ class Window {
                 this.editors[this.active_editor]._VIMmode.BindProperty("command-text", this.editors[this.active_editor]._TextEntry, "text", 0);
 
                 this.editors[this.active_editor]._VIMmodeEnabled = true;
+                this.button_bar._Status_bar.SetLabel("VIM Mode " + Globals.lan.ServeTrad("activated") + ".");
             }
         };
 
         var func_toogle_settings = async (object? sender, EventArgs args) => {
             if (!Globals.settings.GetShowing()) {
-                Globals.settings.OnToggle(this.editors[this.active_editor]);
                 this.grid.Remove(this.PDFViewer);
+                Globals.settings.OnToggle(this.editors[this.active_editor]);
                 this.grid.Attach(Globals.settings.GetScrolledWindow(), 1, 1, 1, 1);
                 // this.grid.AttachNextTo(this.settings.GetScrolledWindow(), this.TextEditor, Gtk.PositionType.Right, 1, 1);
                 Globals.settings.SetShowing(true);
