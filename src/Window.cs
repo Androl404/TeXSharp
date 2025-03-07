@@ -59,6 +59,9 @@ class Window {
         header_bar.AddMenuButon("LaTeX", false);
         header_bar.AddButtonInMenu([Globals.lan.ServeTrad("compile")], [GetFunc("compile")], false, true);
 
+        header_bar.AddMenuButon(Globals.lan.ServeTrad("tools"), false);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("settings")], [GetFunc("toogle_settings")], false, true);
+
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
         header_bar.AddMenuButon(button_icon, false);
