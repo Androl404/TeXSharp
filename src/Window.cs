@@ -147,6 +147,7 @@ class Window {
         // We remove whatever is in the grid before showing the PDF
         if (Globals.settings.GetShowing()) {
             var func = this.GetFunc("toogle_settings");
+            if (func is null) throw new System.ArgumentNullException("Function is null");
             func(null, new EventArgs());
         }
 
