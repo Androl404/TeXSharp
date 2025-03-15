@@ -168,10 +168,10 @@ public class Settings {
         var _button_stop = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("disconnect"));
         _button_stop.SetMarginEnd(12);
         _button_start.OnClicked += (serder, args) => {
-            editor.StartWebSocketServer((int)spin_button.GetValue(), status_bar);
+            editor.StartWebSocketClient(entry.GetText(), (int)_spin_button.GetValue(), status_bar);
         };
         _button_stop.OnClicked += (serder, args) => {
-            editor.StopWebSocketServer(status_bar);
+            editor.StopWebSocketClient(status_bar);
         };
         this.box.Append(_button_start);
         this.box.Append(_button_stop);
