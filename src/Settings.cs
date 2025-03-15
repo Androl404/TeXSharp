@@ -64,29 +64,24 @@ public class Settings {
         }
     }
 
-    public void OnToggle(SourceEditor editor) {
+    public void OnToggle(SourceEditor editor, Gtk.Label status_bar) {
         if (!this.toggled) {
             this.AddMainTitle();
             this.AddLanguagesOptions();
             this.AddEditorThemeOptions(editor);
+            this.AddCollaborationOptions(editor, status_bar);
             this.toggled = true;
         }
     }
 
     private void AddMainTitle() {
-        var attr_list = Pango.AttrList.New();
-        var font = Pango.FontDescription.New();
-        font.SetWeight(Pango.Weight.Bold);
-        font.SetSize(20*Globals.PAGNO_SCALE);
-        var font_attribute = Pango.AttrFontDesc.New(font);
-        attr_list.Insert(font_attribute);
-        var label = Gtk.Label.New(Globals.lan.ServeTrad("settings"));
-        label.SetAttributes(attr_list);
-        this.box.Append(label);
+        this.AddText(Globals.lan.ServeTrad("settings"), 20);
+        var port_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 2);
+        var label = Gtk.Label.New(Globals.lan.ServeTrad("choose_port"));
     }
 
     async private void AddLanguagesOptions() {
-        var lan_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 2);
+        var lan_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
         var label = Gtk.Label.New(Globals.lan.ServeTrad("choose_language"));
         var languages = await Globals.lan.DBGetAllLanguages();
         string[] lang = languages.ToArray();
@@ -106,7 +101,7 @@ public class Settings {
     }
 
     private void AddEditorThemeOptions(SourceEditor editor) {
-        var scheme_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 2);
+        var scheme_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
         var label = Gtk.Label.New(Globals.lan.ServeTrad("choose_theme"));
         string[] themes = { "Adwaita-dark", "classic-dark", "cobalt-light", "kate-dark", "oblivion", "solarized-light", "tango", "Yaru", "Adwaita", "classic", "cobalt", "kate", "solarized-dark", "Yaru-dark" };
         var drop_down = Gtk.DropDown.NewFromStrings(themes);
@@ -123,6 +118,63 @@ public class Settings {
         scheme_box.Append(label);
         scheme_box.Append(drop_down);
         this.box.Append(scheme_box);
+    }
+
+    private void AddText(string text, int size) {
+        var attr_list = Pango.AttrList.New();
+        var font = Pango.FontDescription.New();
+        font.SetWeight(Pango.Weight.Bold);
+        font.SetSize(size*Globals.PAGNO_SCALE);
+        var font_attribute = Pango.AttrFontDesc.New(font);
+        attr_list.Insert(font_attribute);
+        var label = Gtk.Label.New(text);
+        label.SetAttributes(attr_list);
+        this.box.Append(label);
+    }
+
+    private void AddCollaborationOptions(SourceEditor editor, Gtk.Label status_bar) {
+        this.AddText(Globals.lan.ServeTrad("rt_collaboration"), 12);
+        this.AddText(Globals.lan.ServeTrad("server"), 10);
+        var port_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
+        var spin_button = Gtk.SpinButton.NewWithRange(1024, 49151, 1);
+        port_box.Append(Gtk.Label.New(Globals.lan.ServeTrad("choose_port") + " :"));
+        port_box.Append(spin_button);
+        this.box.Append(port_box);
+        var button_start = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("start_server"));
+        var button_stop = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("stop_server"));
+        button_start.SetMarginEnd(12);
+        button_stop.SetMarginEnd(12);
+        button_start.OnClicked += (serder, args) => {
+            editor.StartWebSocketServer((int)spin_button.GetValue(), status_bar);
+        };
+        button_stop.OnClicked += (serder, args) => {
+            editor.StopWebSocketServer(status_bar);
+        };
+        this.box.Append(button_start);
+        this.box.Append(button_stop);
+        this.AddText(Globals.lan.ServeTrad("client"), 10);
+        var _ip_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
+        var entry = Gtk.Entry.New();
+        _ip_box.Append(Gtk.Label.New(Globals.lan.ServeTrad("choose_server") + " (IP) :"));
+        _ip_box.Append(entry);
+        var _port_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
+        var _spin_button = Gtk.SpinButton.NewWithRange(1024, 49151, 1);
+        _port_box.Append(Gtk.Label.New(Globals.lan.ServeTrad("choose_port") + " :"));
+        _port_box.Append(_spin_button);
+        this.box.Append(_ip_box);
+        this.box.Append(_port_box);
+        var _button_start = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("connect"));
+        _button_start.SetMarginEnd(12);
+        var _button_stop = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("disconnect"));
+        _button_stop.SetMarginEnd(12);
+        _button_start.OnClicked += (serder, args) => {
+            editor.StartWebSocketServer((int)spin_button.GetValue(), status_bar);
+        };
+        _button_stop.OnClicked += (serder, args) => {
+            editor.StopWebSocketServer(status_bar);
+        };
+        this.box.Append(_button_start);
+        this.box.Append(_button_stop);
     }
 
     private bool SettingExists() {

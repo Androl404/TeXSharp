@@ -299,7 +299,7 @@ class Window {
         var func_toogle_settings = async (object? sender, EventArgs args) => {
             if (!Globals.settings.GetShowing()) {
                 this.grid.Remove(this.PDFViewer);
-                Globals.settings.OnToggle(this.editors[this.active_editor]);
+                Globals.settings.OnToggle(this.editors[this.active_editor], this.button_bar._Status_bar);
                 this.grid.Attach(Globals.settings.GetScrolledWindow(), 1, 1, 1, 1);
                 // this.grid.AttachNextTo(this.settings.GetScrolledWindow(), this.TextEditor, Gtk.PositionType.Right, 1, 1);
                 Globals.settings.SetShowing(true);

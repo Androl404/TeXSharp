@@ -14,7 +14,7 @@ public class WebSocketServer {
     private readonly ConcurrentDictionary<Guid, WebSocket> clients;
     private readonly ConcurrentDictionary<Guid, string> clientStates;
 
-    public WebSocketServer(string ip = "127.0.0.1", int port = 6969) {
+    public WebSocketServer(int port = 6969, string ip = "127.0.0.1") {
         this.ip = ip;
         this.port = port;
         this.listener = new HttpListener();
