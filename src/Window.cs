@@ -201,7 +201,6 @@ class Window {
                 this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
-                // new DialogWindow($"{Globals.lan.ServeTrad("cannot_open")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
             } finally {
                 open_dialog.Dispose();
                 if (System.IO.File.Exists(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf"))
@@ -226,7 +225,6 @@ class Window {
                 this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("file_saved") + " " + this.editors[this.active_editor].GetPath() + ".");
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
-                // new DialogWindow($"{Globals.lan.ServeTrad("cannot_save")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
             } finally {
                 save_dialog.Dispose();
             }
@@ -261,8 +259,7 @@ class Window {
                     this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_finished") + " " + Globals.lan.ServeTrad("with_errors") + ".");
                 this.PDFViewer = this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
             } else {
-                // TODO: Make a graphical popup window in case of error
-                new DialogWindow(Globals.lan.ServeTrad("not_saved_cannot_compile"), Gio.ThemedIcon.New("dialog-warning-symbolic"), Globals.lan.ServeTrad("warning"), this.window);
+                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("not_saved_cannot_compile"));
             }
         };
 
