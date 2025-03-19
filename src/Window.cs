@@ -5,9 +5,13 @@ using Gio;
 using GtkSource;
 using IronPdf;
 using GLib;
+using Cairo;
 
 class Window {
-    private Gio.Application sender;        // The sender args on window activation
+    private Gio.Application sender;  // The sender args on window activation
+    public Gio.Application _Sender { // Public property used to access the sender attribute in read-only
+        get { return this.sender; }  // get method
+    }
     private Gtk.ApplicationWindow window;  // The main window
     public Gtk.ApplicationWindow _Window { // Public property used to access the window attribute in read-only
         get { return this.window; }        // get method
@@ -16,11 +20,12 @@ class Window {
     public Gtk.Grid _Grid {
         get { return this.grid; } // get method
     }
-    private Dictionary<string, SourceEditor> editors;
-    private string active_editor;
+
     private ButtonBar button_bar;
     private Gtk.ScrolledWindow PDFViewer;
     private Gtk.ScrolledWindow TextEditor;
+
+    private SourceEditor editor = new SourceEditor(0);
 
     // Constructor of the windows
     // Takes title, size, and flag from event in Main
@@ -37,9 +42,13 @@ class Window {
         grid.SetVexpand(true);
         this.grid.ColumnSpacing = 10;
         this.window.SetChild(this.grid); // Set the grid as the window's child
-        this.editors = new Dictionary<string, SourceEditor>();
-        this.active_editor = "";
-        this.TextEditor = this.MakeTextEditor();
+
+        this.grid.Attach(this.editor._EditorNotebook, 0, 1, 1, 1);
+        this.editor._EditorNotebook.SetScrollable(true);
+
+        // We create the first editor, so the first page of the notebook (see SourceEditor.cs)
+        GetFunc("new")(null, null);
+
         this.PDFViewer = this.MakePDFViewer(null);
         this.button_bar = new ButtonBar();
         this.MakeButtonBar();
@@ -66,29 +75,6 @@ class Window {
         header_bar.SetWindowHeaderBar(window);
     }
 
-    // To create the editor and returns the ScrolledWindow associated
-    public Gtk.ScrolledWindow MakeTextEditor() {
-        // Create ScrolledWindow for scrolling capability
-        var scrolled = Gtk.ScrolledWindow.New();
-        scrolled.SetHexpand(true);
-        scrolled.SetVexpand(true);
-
-        this.active_editor = "new1";
-        this.editors.Add(this.active_editor, new SourceEditor("", this.grid));
-        var editor_view = this.editors[this.active_editor].GetView();
-
-        this.editors[this.active_editor]._TextEntry.Hide();
-
-        this.grid.Attach(this.editors[this.active_editor]._TextEntry, 0, 2, 1, 1);
-
-        // Add TextView to ScrolledWindow
-        scrolled.SetChild(editor_view);
-        this.grid.Attach(scrolled, 0, 1, 1, 1); // Spans 2 columns in the third row
-
-        this.window.SetFocus(this.editors[this.active_editor].GetView());
-        return scrolled;
-    }
-
     // To create the PDF viewer and returns the associated ScrolledWindow
     public Gtk.ScrolledWindow MakePDFViewer(string? pdf_path) {
         // IronPdf.PdfDocument pdf = new IronPdf.PdfDocument("./assets/pdf_test.pdf");
@@ -110,34 +96,34 @@ class Window {
 
         var image_box = Gtk.Box.New(Gtk.Orientation.Vertical, 5);
 
-        // TODO: Find another way to show images than converting them to images, it is not convenient
         for (int i = 1; i <= pdf.PageCount; ++i) {
-            var zoom = Gtk.GestureZoom.New();
-
-            // Usage of Gtk.Picture widget instead of Gtk.Image
-            var imagePdf = Gtk.Image.NewFromFile(path + i + ".png");
-
+            // Usage of Gtk.Image widget
+            // -------------------------
+            // var imagePdf = Gtk.Image.NewFromFile(path + i + ".png");
             // Initial size of the image
-            imagePdf.PixelSize = 500;
+            // imagePdf.PixelSize = 500;
+            // var zoom = Gtk.GestureZoom.New();
             // We change the size of the image based on the scale factor, only when the zoom is detected (touchpad pinched)
-            zoom.OnScaleChanged += (sender, args) => { imagePdf.PixelSize = (int)(500 * zoom.GetScaleDelta()); };
+            // zoom.OnScaleChanged += (sender, args) => { imagePdf.PixelSize = (int)(500 * zoom.GetScaleDelta()); };
 
             // We add the gesture zoom to the box so that the entire box is rescaled when zooming, and not the image alone
-            image_box.AddController(zoom);
+            // image_box.AddController(zoom);
+
+            // Usage of Gtk.Picture widget
+            // ---------------------------
+            // Usage of Gtk.Picture widget instead of Gtk.Image
+            var imagePdf = Gtk.Picture.New();
+            // for (int i = 1; i <= pdf.PageCount; ++i) {
+            imagePdf = Gtk.Picture.NewForFilename(path + i + ".png");
+            // Make the image fill the available space horizontally
+            imagePdf.SetHexpand(true);
+            imagePdf.SetContentFit(ContentFit.Fill);
+            // IMPORTANT: this need to be on 'false' or else, the scrolled window will not work
+            imagePdf.SetCanShrink(false);
+            // Keep the aspect ratio of the image, which avoid the image to be stretched when resizing the window
+            imagePdf.SetKeepAspectRatio(true);
+
             // And we add each image to the box
-
-        // // Usage of Gtk.Picture widget instead of Gtk.Image
-        // var imagePdf = Gtk.Picture.New();
-        // for (int i = 1; i <= pdf.PageCount; ++i) {
-        //     imagePdf = Gtk.Picture.NewForFilename(path + i + ".png");
-        //     // Make the image fill the available space horizontally
-        //     imagePdf.SetHexpand(true);
-        //     imagePdf.SetContentFit(ContentFit.Fill);
-        //     // IMPORTANT: this need to be on 'false' or else, the scrolled window will not work
-        //     imagePdf.SetCanShrink(false);
-        //     // Keep the aspect ratio of the image, which avoid the image to be stretched when resizing the window
-        //     imagePdf.SetKeepAspectRatio(true);
-
             image_box.Append(imagePdf);
         }
 
@@ -153,27 +139,35 @@ class Window {
 
     public void MakeButtonBar() {
         this.button_bar.AddButton("new", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-new-symbolic")), GetFunc("new"));
-        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>N", "newFileAction", GetFunc("new"), this.sender);
+        // We set the widget to the window so that it is possible to use the shortcut even if not focusing the editor view
+        this.button_bar.AddShortcut(this.window, "<Control>N", "newFileAction", GetFunc("new"), this.sender);
 
         this.button_bar.AddButton("save", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-save-symbolic")), GetFunc("save"));
-        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>S", "saveAction", GetFunc("save"), this.sender);
+        // In this case, we set the widget to the editor view so that the shortcut is only available when focusing the editor view. (we don't want to save the file when we are not focusing the editor, right? (it can be slow))
+        // EDIT : It actually depends, it works on new file, but seem to not work on opened file. Stricking to window for now.
+        this.button_bar.AddShortcut(this.editor.GetView(), "<Control>S", "saveAction", GetFunc("save"), this.sender);
 
         this.button_bar.AddButton("open", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-open-symbolic")), GetFunc("open"));
-        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control>O", "openAction", GetFunc("open"), this.sender);
+        this.button_bar.AddShortcut(this.window, "<Control>O", "openAction", GetFunc("open"), this.sender);
+
+        this.button_bar.AddButton("close", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("window-close-symbolic")), GetFunc("close"));
+        this.button_bar.AddShortcut(this.window, "<Control>W", "closeAction", GetFunc("close"), this.sender);
 
         this.button_bar.AddButton("compile", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("media-playback-start-symbolic")), GetFunc("compile"));
-        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>C", "compileAction", GetFunc("compile"), this.sender);
+        this.button_bar.AddShortcut(this.window, "<Control><Shift>C", "compileAction", GetFunc("compile"), this.sender);
 
         this.button_bar.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));
-        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>V", "vimAction", GetFunc("vim"), this.sender);
+        this.button_bar.AddShortcut(this.window, "<Control><Shift>V", "vimAction", GetFunc("vim"), this.sender);
 
         this.button_bar.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
-        this.button_bar.AddShortcut(this.editors[this.active_editor].GetView(), "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.sender);
+        this.button_bar.AddShortcut(this.editor.GetView(), "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.sender);
         this.grid.Attach(this.button_bar.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
     private Func<object?, EventArgs, System.Threading.Tasks.Task>? GetFunc(string function) {
-        var func_open = async (object? sender, EventArgs args) => {
+
+        var func_open = async (object? sender, EventArgs args) =>
+        {
             var open_dialog = Gtk.FileDialog.New();
             try {
                 open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
@@ -181,32 +175,36 @@ class Window {
                 await open_task;
                 if (open_task.Result is null)
                     throw new System.ArgumentNullException("Opening task is null.");
-                this.editors[this.active_editor].OpenFile(open_task.Result.GetPath());
-                this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
+                this.editor.OpenFile(open_task.Result.GetPath());
+                this.window.SetTitle($"{this.editor.GetPath()} - TeXSharp");
+                this.grid.Attach(this.editor.GetTextEntry(), 0, 2, 1, 1);
+                this.editor.GetTextEntry().Hide();
+
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
                 // new DialogWindow($"{Globals.lan.ServeTrad("cannot_open")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
             } finally {
                 open_dialog.Dispose();
-                if (System.IO.File.Exists(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf"))
-                    this.PDFViewer = this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
+                if (System.IO.File.Exists(this.editor.GetPath()[..^ 3] + "pdf"))
+                    this.PDFViewer = this.MakePDFViewer(this.editor.GetPath()[..^ 3] + "pdf");
             }
         };
 
-        var func_save = async (object? sender, EventArgs args) => {
+        var func_save = async (object? sender, EventArgs args) =>
+        {
             var save_dialog = Gtk.FileDialog.New();
             try {
-                if (!this.editors[this.active_editor]._Exists) {
+                if (!this.editor.GetFileExists()) {
                     save_dialog.SetTitle(Globals.lan.ServeTrad("save_file"));
                     var save_task = save_dialog.SaveAsync(this.window);
                     await save_task;
                     if (save_task.Result is null)
                         throw new System.ArgumentNullException("Saving task is null.");
-                    this.editors[this.active_editor].SaveFile(save_task.Result.GetPath());
+                    this.editor.SaveFile(save_task.Result.GetPath());
                 } else {
-                    this.editors[this.active_editor].SaveFile(this.editors[this.active_editor]._Path);
+                    this.editor.SaveFile(this.editor.GetPath());
                 }
-                this.window.SetTitle($"{this.editors[this.active_editor].GetPath()} - TeXSharp");
+                this.window.SetTitle($"{this.editor.GetPath()} - TeXSharp");
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
                 // new DialogWindow($"{Globals.lan.ServeTrad("cannot_save")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
@@ -215,65 +213,76 @@ class Window {
             }
         };
 
-        var func_newFile = async (object? sender, EventArgs args) => {
-            await func_save(sender, args);
-            this.editors[this.active_editor].NewFile();
-            this.window.SetTitle($"{Globals.lan.ServeTrad("new_file")} - TeXSharp");
-            this.grid.Remove(this.PDFViewer);
+        var func_newFile = async (object? sender, EventArgs args) =>
+        {
+            this.editor.NewFile();
+            // The only way to add the TextEntry to the editor is here. Otherwise, SourceEditor class can't access the grid
+            this.grid.Attach(this.editor.GetTextEntry(), 0, 2, 1, 1);
+            this.editor.GetTextEntry().Hide();
         };
 
-        var func_quit = async (object? sender, EventArgs args) => {
+        var func_close = async (object? sender, EventArgs args) =>
+        {
+            this.editor.CloseFile();
+        };
+
+        var func_quit = async (object? sender, EventArgs args) =>
+        {
             this.window.Destroy();
         };
 
-        var func_about = async (object? sender, EventArgs args) => {
+        var func_about = async (object? sender, EventArgs args) =>
+        {
             var dialog = new TAboutDialog("TeXSharp");
             dialog.Application = (Gtk.Application)this.sender; // CS0030: Impossible de convertir le type 'Gtk.Button' en 'Gtk.Application'
             dialog.Show();
         };
 
-        var func_compile = async (object? sender, EventArgs args) => {
+        var func_compile = async (object? sender, EventArgs args) =>
+        {
             await func_save(sender, args);
-            if (this.editors[this.active_editor].GetFileExists()) {
-                var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editors[this.active_editor].GetPath(), 50000);
-                this.PDFViewer = this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
+            if (this.editor.GetFileExists()) {
+                var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editor.GetPath(), 50000);
+                this.PDFViewer = this.MakePDFViewer(this.editor.GetPath()[..^ 3] + "pdf");
             } else {
                 // TODO: Make a graphical popup window in case of error
                 new DialogWindow(Globals.lan.ServeTrad("not_saved_cannot_compile"), Gio.ThemedIcon.New("dialog-warning-symbolic"), Globals.lan.ServeTrad("warning"), this.window);
             }
         };
 
-        var func_vim = async (object? sender, EventArgs args) => {
+        var func_vim = async (object? sender, EventArgs args) =>
+        {
             // If the VIM mode is enabled (1), we disable it
-            if (this.editors[this.active_editor]._VIMmodeEnabled) {
-                this.editors[this.active_editor]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.None);
-                this.editors[this.active_editor]._View.RemoveController(this.editors[this.active_editor]._VIMeventControllerKey);
-                this.editors[this.active_editor]._TextEntry.Hide();
-                this.editors[this.active_editor]._VIMmodeEnabled = false;
+            if (this.editor.GetVIMmodeEnabled()) {
+                this.editor.GetVIMeventControllerKey().SetPropagationPhase(Gtk.PropagationPhase.None);
+                this.editor.GetView().RemoveController(this.editor.GetVIMeventControllerKey());
+                this.editor.GetTextEntry().Hide();
+                this.editor.SetVIMmodeEnabled(false);
             } else {
                 // If the VIM mode is disabled (0), we enable it
-                this.editors["new1"]._TextEntry.Show();
-                this.editors["new1"]._TextEntry.SetPlaceholderText("Vim command bar");
+                this.editor.GetTextEntry().Show();
+                this.editor.GetTextEntry().SetPlaceholderText("Vim command bar");
 
                 // Set the IM context to the event controller key
-                this.editors[this.active_editor]._VIMeventControllerKey.SetImContext(this.editors[this.active_editor]._VIMmode);
-                this.editors[this.active_editor]._VIMeventControllerKey.SetPropagationPhase(Gtk.PropagationPhase.Capture);
+                this.editor.GetVIMeventControllerKey().SetImContext(this.editor.GetVIMmode());
+                this.editor.GetVIMeventControllerKey().SetPropagationPhase(Gtk.PropagationPhase.Capture);
                 // Add the event controller key to the view
                 // And the vim input module context to the view (editor)
-                this.editors[this.active_editor]._View.AddController(this.editors[this.active_editor]._VIMeventControllerKey);
-                this.editors[this.active_editor]._VIMmode.SetClientWidget(this.editors[this.active_editor]._View);
+                this.editor.GetView().AddController(this.editor.GetVIMeventControllerKey());
+                this.editor.GetVIMmode().SetClientWidget(this.editor.GetView());
 
                 // Bind the command bar text to the text entry so that when we type ":" in the editor it will show up in the text entry at the bottom
-                this.editors[this.active_editor]._VIMmode.BindProperty("command-bar-text", this.editors[this.active_editor]._TextEntry, "text", 0);
-                this.editors[this.active_editor]._VIMmode.BindProperty("command-text", this.editors[this.active_editor]._TextEntry, "text", 0);
+                this.editor.GetVIMmode().BindProperty("command-bar-text", this.editor.GetTextEntry(), "text", 0);
+                this.editor.GetVIMmode().BindProperty("command-text", this.editor.GetTextEntry(), "text", 0);
 
-                this.editors[this.active_editor]._VIMmodeEnabled = true;
+                this.editor.SetVIMmodeEnabled(true);
             }
         };
 
-        var func_toogle_settings = async (object? sender, EventArgs args) => {
+        var func_toogle_settings = async (object? sender, EventArgs args) =>
+        {
             if (!Globals.settings.GetShowing()) {
-                Globals.settings.OnToggle(this.editors[this.active_editor]);
+                Globals.settings.OnToggle(this.editor.editors[this.editor.GetCurrentEditorIndex()]);
                 this.grid.Remove(this.PDFViewer);
                 this.grid.Attach(Globals.settings.GetScrolledWindow(), 1, 1, 1, 1);
                 // this.grid.AttachNextTo(this.settings.GetScrolledWindow(), this.TextEditor, Gtk.PositionType.Right, 1, 1);
@@ -292,6 +301,8 @@ class Window {
             return func_open;
         case "save":
             return func_save;
+        case "close":
+            return func_close;
         case "compile":
             return func_compile;
         case "quit":
