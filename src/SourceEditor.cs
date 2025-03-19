@@ -116,14 +116,13 @@ public class SourceEditor {
             return;
         }
         this.webSocketClient = new WebSocketClient($"ws://{server}:{port}/");
+        this.webSocketClient.Connected += (s, e) => Console.WriteLine("Connected to server");
+        this.webSocketClient.Disconnected += (s, e) => Console.WriteLine("Disconnected from server");
+        this.webSocketClient.MessageReceived += (s, message) => Console.WriteLine($"Received: {message}");
+        this.webSocketClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
         try {
             await this.webSocketClient.ConnectAsync();
             status_bar.SetLabel(Globals.lan.ServeTrad("client_did_start"));
-            this.webSocketClient.Connected += (s, e) => Console.WriteLine("Connected to server");
-            this.webSocketClient.Disconnected += (s, e) => Console.WriteLine("Disconnected from server");
-            this.webSocketClient.MessageReceived += (s, message) => Console.WriteLine($"Received: {message}");
-            this.webSocketClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
-
         } catch (Exception ex) {
             status_bar.SetLabel(Globals.lan.ServeTrad("client_did_not_connect") + ex.Message);
             this.webSocketClient = null;
