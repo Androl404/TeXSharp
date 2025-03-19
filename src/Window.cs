@@ -133,7 +133,8 @@ class Window {
         // We remove whatever is in the grid before showing the PDF
         if (Globals.settings.GetShowing()) {
             var func = this.GetFunc("toogle_settings");
-            if (func is null) throw new System.ArgumentNullException("Function is null");
+            if (func is null)
+                throw new System.ArgumentNullException("Function is null");
             func(null, new EventArgs());
         }
 
@@ -305,7 +306,7 @@ class Window {
         var func_toogle_settings = async (object? sender, EventArgs args) =>
         {
             if (!Globals.settings.GetShowing()) {
-                Globals.settings.OnToggle(this.editor.editors[this.editor.GetCurrentEditorIndex()]);
+                Globals.settings.OnToggle(this.editor);
                 this.grid.Remove(this.PDFViewer);
                 this.grid.Attach(Globals.settings.GetScrolledWindow(), 1, 1, 1, 1);
                 // this.grid.AttachNextTo(this.settings.GetScrolledWindow(), this.TextEditor, Gtk.PositionType.Right, 1, 1);
