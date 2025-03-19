@@ -68,6 +68,9 @@ class Window {
         header_bar.AddMenuButon("LaTeX", false);
         header_bar.AddButtonInMenu([Globals.lan.ServeTrad("compile")], [GetFunc("compile")], false, true);
 
+        header_bar.AddMenuButon(Globals.lan.ServeTrad("tools"), false);
+        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("settings")], [GetFunc("toogle_settings")], false, true);
+
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
         header_bar.AddMenuButon(button_icon, false);
@@ -127,6 +130,16 @@ class Window {
             image_box.Append(imagePdf);
         }
 
+        // We remove whatever is in the grid before showing the PDF
+        if (Globals.settings.GetShowing()) {
+            var func = this.GetFunc("toogle_settings");
+            if (func is null) throw new System.ArgumentNullException("Function is null");
+            func(null, new EventArgs());
+        }
+
+        // We also clean the previous PDF file
+        this.grid.Remove(this.PDFViewer);
+
         // We put the PDF images into a scrollable element
         var scrolledPdf = Gtk.ScrolledWindow.New();
         scrolledPdf.SetHexpand(true);
@@ -160,7 +173,9 @@ class Window {
         this.button_bar.AddShortcut(this.window, "<Control><Shift>V", "vimAction", GetFunc("vim"), this.sender);
 
         this.button_bar.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
-        this.button_bar.AddShortcut(this.editor.GetView(), "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.sender);
+        this.button_bar.AddShortcut(this.window, "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.sender);
+
+        this.button_bar.AddStatusBar();
         this.grid.Attach(this.button_bar.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
@@ -180,9 +195,9 @@ class Window {
                 this.grid.Attach(this.editor.GetTextEntry(), 0, 2, 1, 1);
                 this.editor.GetTextEntry().Hide();
 
+                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("file_opened") + " " + open_task.Result.GetPath() + ".");
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
-                // new DialogWindow($"{Globals.lan.ServeTrad("cannot_open")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
             } finally {
                 open_dialog.Dispose();
                 if (System.IO.File.Exists(this.editor.GetPath()[..^ 3] + "pdf"))
@@ -205,9 +220,9 @@ class Window {
                     this.editor.SaveFile(this.editor.GetPath());
                 }
                 this.window.SetTitle($"{this.editor.GetPath()} - TeXSharp");
+                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("file_saved") + " " + this.editor.editors[this.editor.GetCurrentEditorIndex()].GetPath() + ".");
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
-                // new DialogWindow($"{Globals.lan.ServeTrad("cannot_save")} {e.Message}", Gio.ThemedIcon.New("dialog-warning-symbolic"), "warning", this.window);
             } finally {
                 save_dialog.Dispose();
             }
@@ -219,6 +234,8 @@ class Window {
             // The only way to add the TextEntry to the editor is here. Otherwise, SourceEditor class can't access the grid
             this.grid.Attach(this.editor.GetTextEntry(), 0, 2, 1, 1);
             this.editor.GetTextEntry().Hide();
+            this.window.SetTitle($"{Globals.lan.ServeTrad("new_file")} - TeXSharp");
+            this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("new_file") + " " + Globals.lan.ServeTrad("created") + ".");
         };
 
         var func_close = async (object? sender, EventArgs args) =>
@@ -242,11 +259,15 @@ class Window {
         {
             await func_save(sender, args);
             if (this.editor.GetFileExists()) {
+                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_started") + "...");
                 var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editor.GetPath(), 50000);
+                if (process.ExitCode == 0)
+                    this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_finished") + ".");
+                else
+                    this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_finished") + " " + Globals.lan.ServeTrad("with_errors") + ".");
                 this.PDFViewer = this.MakePDFViewer(this.editor.GetPath()[..^ 3] + "pdf");
             } else {
-                // TODO: Make a graphical popup window in case of error
-                new DialogWindow(Globals.lan.ServeTrad("not_saved_cannot_compile"), Gio.ThemedIcon.New("dialog-warning-symbolic"), Globals.lan.ServeTrad("warning"), this.window);
+                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("not_saved_cannot_compile"));
             }
         };
 
@@ -258,6 +279,7 @@ class Window {
                 this.editor.GetView().RemoveController(this.editor.GetVIMeventControllerKey());
                 this.editor.GetTextEntry().Hide();
                 this.editor.SetVIMmodeEnabled(false);
+                this.button_bar._Status_bar.SetLabel("VIM Mode " + Globals.lan.ServeTrad("desactivated") + ".");
             } else {
                 // If the VIM mode is disabled (0), we enable it
                 this.editor.GetTextEntry().Show();
@@ -276,6 +298,7 @@ class Window {
                 this.editor.GetVIMmode().BindProperty("command-text", this.editor.GetTextEntry(), "text", 0);
 
                 this.editor.SetVIMmodeEnabled(true);
+                this.button_bar._Status_bar.SetLabel("VIM Mode " + Globals.lan.ServeTrad("activated") + ".");
             }
         };
 
