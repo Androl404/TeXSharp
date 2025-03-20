@@ -3,19 +3,16 @@ using System.Collections;
 using Gio;
 using Gtk;
 
-class AppHeaderBar
-{
+class AppHeaderBar {
     private Gtk.HeaderBar headerbar;
-    public Gtk.HeaderBar _HeaderBar
-    {
+    public Gtk.HeaderBar _HeaderBar {
         get { return this.headerbar; }
     }
     private Gtk.MenuButton? menu_button;
 
     public AppHeaderBar() { this.headerbar = Gtk.HeaderBar.New(); }
 
-    public void AddMenuButon(Gio.ThemedIcon icon, bool frame)
-    {
+    public void AddMenuButon(Gio.ThemedIcon icon, bool frame) {
         var button = Gtk.MenuButton.New();              // We create a button
         button.SetHasFrame(frame);                      // without a frame
         var button_icon = Gtk.Image.NewFromGicon(icon); // We create an image with an icon
@@ -24,8 +21,7 @@ class AppHeaderBar
         this.menu_button = button;
     }
 
-    public void AddMenuButon(string label, bool frame)
-    {
+    public void AddMenuButon(string label, bool frame) {
         var button = Gtk.MenuButton.New(); // We create a button
         button.SetHasFrame(frame);         // without a frame
         button.Label = label;
@@ -34,14 +30,12 @@ class AppHeaderBar
 
     // TODO: Refactor this function in order to maintain an access to the Button in case we nedd to aplly them a method
     // Functions passed into the array must be async
-    public void AddButtonInMenu(string[] label, string[] shortcut, Func<object?, EventArgs, System.Threading.Tasks.Task>?[] funcs, bool frame, bool pack_start)
-    {
+    public void AddButtonInMenu(string[] label, string[] shortcut, Func<object?, EventArgs, System.Threading.Tasks.Task>?[] funcs, bool frame, bool pack_start) {
         if (label.Length != funcs.Length)
             throw new System.OverflowException("Lenght of two tables are not equal !");
         var pop_file = Gtk.Popover.New();                        // New popover menu
         var box_file = Gtk.Box.New(Gtk.Orientation.Vertical, 0); // New box to put in the popover menu
-        for (int i = 0; i < label.Length; ++i)
-        {
+        for (int i = 0; i < label.Length; ++i) {
             // We create a little horizontal box to put the button and the label of the shorctut
             var box = Gtk.Box.New(Gtk.Orientation.Horizontal, 0);
 
@@ -50,8 +44,7 @@ class AppHeaderBar
             button_file_open.SetHasFrame(frame);     // Without frame
             // Create a local copy of i to capture the corresponding value of i
             int localIndex = i;
-            button_file_open.OnClicked += (sender, args) =>
-            {
+            button_file_open.OnClicked += (sender, args) => {
                 funcs[localIndex](sender, args); // Utiliser la copie locale
             };
 
@@ -76,8 +69,7 @@ class AppHeaderBar
             this.headerbar.PackEnd(this.menu_button);
     }
 
-    public void SetWindowHeaderBar(Gtk.Window window)
-    {
+    public void SetWindowHeaderBar(Gtk.Window window) {
         window.SetTitlebar(this.headerbar); // Set the header bar
     }
 

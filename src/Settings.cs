@@ -55,8 +55,8 @@ public class Settings {
             this.SaveSettings();
         } else {
             string path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) // If we are on a niche operating system for games
-                ? Environment.ExpandEnvironmentVariables("%appdata%") + "/Local/TeXSharp/config.json"
-                : Environment.GetEnvironmentVariable("HOME") + "/.config/texsharp/config.json";
+                              ? Environment.ExpandEnvironmentVariables("%appdata%") + "/Local/TeXSharp/config.json"
+                              : Environment.GetEnvironmentVariable("HOME") + "/.config/texsharp/config.json";
 
             this.settings_values = JsonSerializer.Deserialize<SettingsValues>(System.IO.File.ReadAllText(path)) ?? new SettingsValues();
         }
@@ -122,7 +122,7 @@ public class Settings {
         var attr_list = Pango.AttrList.New();
         var font = Pango.FontDescription.New();
         font.SetWeight(Pango.Weight.Bold);
-        font.SetSize(size*Globals.PAGNO_SCALE);
+        font.SetSize(size * Globals.PAGNO_SCALE);
         var font_attribute = Pango.AttrFontDesc.New(font);
         attr_list.Insert(font_attribute);
         var label = Gtk.Label.New(text);
@@ -142,12 +142,8 @@ public class Settings {
         var button_stop = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("stop_server"));
         button_start.SetMarginEnd(12);
         button_stop.SetMarginEnd(12);
-        button_start.OnClicked += (serder, args) => {
-            editor.StartWebSocketServer((int)spin_button.GetValue(), status_bar);
-        };
-        button_stop.OnClicked += (serder, args) => {
-            editor.StopWebSocketServer(status_bar);
-        };
+        button_start.OnClicked += (serder, args) => { editor.StartWebSocketServer((int)spin_button.GetValue(), status_bar); };
+        button_stop.OnClicked += (serder, args) => { editor.StopWebSocketServer(status_bar); };
         this.box.Append(button_start);
         this.box.Append(button_stop);
         this.AddText(Globals.lan.ServeTrad("client"), 10);
@@ -165,12 +161,8 @@ public class Settings {
         _button_start.SetMarginEnd(12);
         var _button_stop = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("disconnect"));
         _button_stop.SetMarginEnd(12);
-        _button_start.OnClicked += (serder, args) => {
-            editor.StartWebSocketClient(entry.GetText(), (int)_spin_button.GetValue(), status_bar);
-        };
-        _button_stop.OnClicked += (serder, args) => {
-            editor.StopWebSocketClient(status_bar);
-        };
+        _button_start.OnClicked += (serder, args) => { editor.StartWebSocketClient(entry.GetText(), (int)_spin_button.GetValue(), status_bar); };
+        _button_stop.OnClicked += (serder, args) => { editor.StopWebSocketClient(status_bar); };
         this.box.Append(_button_start);
         this.box.Append(_button_stop);
     }
