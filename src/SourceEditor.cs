@@ -36,8 +36,6 @@ public class SourceEditor {
     public Gtk.Entry _TextEntry {
         get { return this.TextEntry; }
     }
-    private WebSocketServer? webSocketServer = null;
-    private WebSocketClient? webSocketClient = null;
 
     public SourceEditor(string path, Gtk.Grid grid) {
         // TODO: Take in account the path to open an instance of an editor with an existing file
