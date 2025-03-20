@@ -54,12 +54,10 @@ public class Settings {
                 this.settings_values.editor_theme = "Adwaita";
             this.SaveSettings();
         } else {
-            string path = "";
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) { // If we are on a niche operating system for video games
-                path = Environment.ExpandEnvironmentVariables("%appdata%") + "/Local/TeXSharp/config.json";
-            } else { // Unix-based OS
-                path = Environment.GetEnvironmentVariable("HOME") + "/.config/texsharp/config.json";
-            }
+            string path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) // If we are on a niche operating system for games
+                ? Environment.ExpandEnvironmentVariables("%appdata%") + "/Local/TeXSharp/config.json"
+                : Environment.GetEnvironmentVariable("HOME") + "/.config/texsharp/config.json";
+
             this.settings_values = JsonSerializer.Deserialize<SettingsValues>(System.IO.File.ReadAllText(path)) ?? new SettingsValues();
         }
     }

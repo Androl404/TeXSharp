@@ -19,7 +19,7 @@ class Window {
     private Dictionary<string, SourceEditor> editors;
     private string active_editor;
     private ButtonBar button_bar;
-    private Gtk.ScrolledWindow PDFViewer;
+    private Gtk.ScrolledWindow? PDFViewer;
     private Gtk.ScrolledWindow TextEditor;
 
     // Constructor of the windows
@@ -40,9 +40,10 @@ class Window {
         this.editors = new Dictionary<string, SourceEditor>();
         this.active_editor = "";
         this.TextEditor = this.MakeTextEditor();
-        this.PDFViewer = this.MakePDFViewer(null);
+        this.PDFViewer = null;
         this.button_bar = new ButtonBar();
         this.MakeButtonBar();
+        this.MakePDFViewerWrapper(null);
     }
 
     // To construct the header bar of the window
@@ -92,8 +93,12 @@ class Window {
         return scrolled;
     }
 
+    async private void MakePDFViewerWrapper(string? pdf_path) {
+        this.PDFViewer =  await this.MakePDFViewer(pdf_path);
+    }
+
     // To create the PDF viewer and returns the associated ScrolledWindow
-    public Gtk.ScrolledWindow MakePDFViewer(string? pdf_path) {
+    async public Task<Gtk.ScrolledWindow> MakePDFViewer(string? pdf_path) {
         // IronPdf.PdfDocument pdf = new IronPdf.PdfDocument("./assets/pdf_test.pdf");
         if (pdf_path is null) {
             var scrolled = Gtk.ScrolledWindow.New();
@@ -102,14 +107,14 @@ class Window {
         }
         IronPdf.PdfDocument pdf = new IronPdf.PdfDocument(pdf_path);
 
-        string path = "";
-        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) { // If we are on a niche operating system for games
-            path = Environment.ExpandEnvironmentVariables("%temp%/");
-        } else { // Unix-based OS
-            path = "/tmp/";
-        }
+        string path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) // If we are on a niche operating system for games
+                ? Environment.ExpandEnvironmentVariables("%temp%/")
+                : "/tmp/";
+
         // Render the PDF as images in temp folder
-        pdf.RasterizeToImageFiles($"{path}*.png", 2160, 3840, IronPdf.Imaging.ImageType.Png, 300);
+        await System.Threading.Tasks.Task.Run(() => {
+            pdf.RasterizeToImageFiles($"{path}*.png", 2160, 3840, IronPdf.Imaging.ImageType.Png, 300);
+        });
 
         var image_box = Gtk.Box.New(Gtk.Orientation.Vertical, 5);
 
@@ -205,7 +210,7 @@ class Window {
             } finally {
                 open_dialog.Dispose();
                 if (System.IO.File.Exists(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf"))
-                    this.PDFViewer = this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
+                    this.PDFViewer = await this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
             }
         };
 
@@ -259,7 +264,7 @@ class Window {
                     this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_finished") + ".");
                 else
                     this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_finished") + " " + Globals.lan.ServeTrad("with_errors") + ".");
-                this.PDFViewer = this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
+                this.PDFViewer = await this.MakePDFViewer(this.editors[this.active_editor].GetPath()[..^ 3] + "pdf");
             } else {
                 // TODO: Make a graphical popup window in case of error
                 new DialogWindow(Globals.lan.ServeTrad("not_saved_cannot_compile"), Gio.ThemedIcon.New("dialog-warning-symbolic"), Globals.lan.ServeTrad("warning"), this.window);
