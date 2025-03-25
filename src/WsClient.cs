@@ -4,6 +4,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+namespace WSocket;
+
 public class WebSocketClient : IDisposable {
     private readonly ClientWebSocket webSocket;
     private readonly CancellationTokenSource clientCancellation;

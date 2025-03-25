@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+namespace WSocket;
+
 public class WebSocketServer {
     private readonly string ip;
     private readonly int port;
