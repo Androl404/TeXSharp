@@ -174,7 +174,7 @@ public class SourceEditor {
 
     public void ChangeEditorTheme(string theme) { this.editors[this.GetCurrentEditorIndex()].buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(theme)); }
 
-    public async void StartWebSocketServer(int port, Gtk.Label status_bar) {$ throw new System.NotImplementedException("Not implemented yet."); }
+    public async void StartWebSocketServer(int port, Gtk.Label status_bar) { throw new System.NotImplementedException("Not implemented yet."); }
 
     public async void StopWebSocketServer(Gtk.Label status_bar) { throw new System.NotImplementedException("Not implemented yet."); }
 
