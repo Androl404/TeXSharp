@@ -56,8 +56,8 @@ public class SourceEditor {
 
     public List<SourceEditor> editors = new List<SourceEditor>();
 
-    private WebSocketClient? = null;
-    private WebSocketServer? = null;
+    private WebSocketClient? ws_client = null;
+    private WebSocketServer? ws_server = null;
 
     public SourceEditor(int index) {
         // First, the name of the editor is set (it should start at 0). We use an index variable to be sure the name is unique. Otherwise, each editor will have the same name (for example, editor0)
@@ -174,7 +174,7 @@ public class SourceEditor {
 
     public void ChangeEditorTheme(string theme) { this.editors[this.GetCurrentEditorIndex()].buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(theme)); }
 
-    public async void StartWebSocketServer(int port, Gtk.Label status_bar) { throw new System.NotImplementedException("Not implemented yet."); }
+    public async void StartWebSocketServer(int port, Gtk.Label status_bar) {$ throw new System.NotImplementedException("Not implemented yet."); }
 
     public async void StopWebSocketServer(Gtk.Label status_bar) { throw new System.NotImplementedException("Not implemented yet."); }
 
