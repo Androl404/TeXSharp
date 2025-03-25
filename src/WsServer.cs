@@ -186,16 +186,3 @@ public class WebSocketServer {
         }
     }
 }
-
-class Program {
-    static async Task Main() {
-        var server = new WebSocketServer();
-
-        Console.CancelKeyPress += async (sender, e) => {
-            e.Cancel = true;
-            await server.StopAsync();
-        };
-
-        await server.StartAsync();
-    }
-}

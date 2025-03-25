@@ -153,35 +153,3 @@ public class WebSocketClient : IDisposable {
 
     public bool IsConnected => webSocket.State == WebSocketState.Open;
 }
-
-// Example usage
-class Program {
-    static async Task Main() {
-        using var client = new WebSocketClient("ws://127.0.0.1:6969/");
-
-        // Set up event handlers
-        client.Connected += (s, e) => Console.WriteLine("Connected to server"); client.Disconnected += (s, e) =>
-        Console.WriteLine("Disconnected from server");
-        client.MessageReceived += (s, message) => Console.WriteLine($"Received: {message}");
-        client.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
-
-        try {
-            await client.ConnectAsync();
-
-            // Example: Send some messages
-            await client.SendMessageAsync("Hello from client!");
-
-            Console.WriteLine("Press Enter to disconnect...");
-            while(true) client.SendMessageAsync(Console.ReadLine());
-
-            // This should now complete within the timeout period
-            await client.DisconnectAsync();
-            Console.WriteLine("Disconnected successfully!");
-        } catch (Exception ex) {
-            Console.WriteLine($"Fatal error: {ex.Message}");
-        } finally {
-            // Ensure client is disposed
-            client.Dispose();
-        }
-    }
-}
