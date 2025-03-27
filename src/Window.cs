@@ -25,7 +25,7 @@ class Window {
     private Gtk.ScrolledWindow? PDFViewer;
     private Gtk.ScrolledWindow TextEditor;
 
-    private SourceEditorWrapper EditorWrapper = new SourceEditorWrapper();
+    private SourceEditorWrapper EditorWrapper;
 
     // Constructor of the windows
     // Takes title, size, and flag from event in Main
@@ -36,6 +36,7 @@ class Window {
         this.MWindow.Show();                                               // Show the window (it's always better to see it)
         // To set the sender arg
         this.Sender = sender;
+        this.EditorWrapper = new SourceEditorWrapper(this.MWindow);
         // To create the grid
         this.Grid.SetHexpand(true);
         this.Grid.SetVexpand(true);

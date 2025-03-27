@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Gtk;
 
 namespace WSocket;
 
@@ -16,6 +17,7 @@ public class WebSocketServer {
     private readonly ConcurrentDictionary<Guid, WebSocket> clients;
     private readonly ConcurrentDictionary<Guid, string> clientStates;
     private readonly GtkSource.Buffer editor_buffer;
+    public bool _Failed = false;
 
     public WebSocketServer(int port, GtkSource.Buffer editor_buffer, string ip = "*") {
         this.ip = ip;
@@ -28,7 +30,7 @@ public class WebSocketServer {
         this.editor_buffer = editor_buffer;
     }
 
-    public async Task StartAsync() {
+    public async Task StartAsync(Gtk.Label statusBar) {
         try {
             listener.Start();
             Console.WriteLine($"Server started on {ip}:{port}");
@@ -44,6 +46,7 @@ public class WebSocketServer {
             }
         } catch (Exception ex) {
             Console.WriteLine($"Server error: {ex.Message}");
+            this._Failed = true;
             await StopAsync();
         }
     }
@@ -56,7 +59,7 @@ public class WebSocketServer {
 
             if (clients.TryAdd(clientId, webSocket)) {
                 Console.WriteLine($"Client {clientId} connected");
-                await BroadcastMessageToClient(clientId, "full:\n" + this.editor_buffer.Text);
+                await BroadcastMessageToClient(clientId, "full\n" + this.editor_buffer.Text);
                 await HandleClientSession(clientId, webSocket);
             }
         } catch (Exception ex) {

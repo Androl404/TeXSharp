@@ -9,9 +9,21 @@ public class SourceEditorWrapper {
 
     private List<SourceEditor> Editors = new List<SourceEditor>();
 
-    public SourceEditorWrapper() {
+    public SourceEditorWrapper(Gtk.Window window) {
         this.Editors.Add(new SourceEditor());
         this.EditorNotebook.AppendPage(this.Editors[0]._Box, EditorNotebookTabLabel(Globals.Languages.ServeTrad("new_file")));
+        this.EditorNotebook.SetTabReorderable(this.Editors[0]._Box, true);
+        // TODO: Change title of Window when tabs are switched in the Notebook
+        // this.EditorNotebook.OnSwitchPage += (notebook, args) => {
+        //     for (int i = 0; i < EditorNotebook.GetNPages(); i++) {
+        //         if (args.Page == EditorNotebook.GetNthPage(i)) {
+        //             window.SetTitle($"{Globals.Languages.ServeTrad("new_file")} - TeXSharp");
+        //             break;
+        //         }
+        //         else
+        //             window.SetTitle($"{this.GetCurrentSourceEditor().GetPath()} - TeXSharp");
+        //     }
+        // };
     }
 
     // Simple function to create a tab label for the Notebook pages. It simply returns a box with a label, the name of the file, and a close button (symbol of a cross) to close the tab
@@ -35,6 +47,7 @@ public class SourceEditorWrapper {
     public void NewFile() {
         this.Editors.Add(new SourceEditor());
         this.EditorNotebook.AppendPage(this.Editors[Editors.Count - 1]._Box, EditorNotebookTabLabel(Globals.Languages.ServeTrad("new_file")));
+        this.EditorNotebook.SetTabReorderable(this.Editors[Editors.Count - 1]._Box, true);
         this.EditorNotebook.NextPage();
     }
 
@@ -44,6 +57,7 @@ public class SourceEditorWrapper {
         this.Editors.Add(new SourceEditor());
         this.Editors[Editors.Count - 1].OpenFile(path);
         this.EditorNotebook.AppendPage(this.Editors[Editors.Count - 1]._Box, EditorNotebookTabLabel(path.Split('/').Last()));
+        this.EditorNotebook.SetTabReorderable(this.Editors[Editors.Count - 1]._Box, true);
         this.EditorNotebook.NextPage();
     }
 
@@ -188,82 +202,89 @@ public class SourceEditor {
 
     public void ChangeEditorTheme(string theme) { this.Buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(theme)); }
 
-    public async void StartWebSocketServer(int port, Gtk.Label status_bar) {
+    public async void StartWebSocketServer(int port, Gtk.Label statusBar) {
         if (!(this.WsServer is null)) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("server_already_started"));
+            statusBar.SetLabel(Globals.Languages.ServeTrad("server_already_started"));
             return;
         }
         if (!(this.WsClient is null)) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + Globals.Languages.ServeTrad("client_already_started"));
+            statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + Globals.Languages.ServeTrad("client_already_started"));
             return;
         }
         if (!(this.GetFileExists())) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + " " + Globals.Languages.ServeTrad("not_saved"));
+            statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + " " + Globals.Languages.ServeTrad("not_saved"));
             return;
         }
         this.WsServer = new WSocket.WebSocketServer(port, this.GetBuffer());
         try {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("server_did_start"));
-            await this.WsServer.StartAsync();
+            statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_start"));
+            await this.WsServer.StartAsync(statusBar);
+            if (this.WsServer._Failed)
+                statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start"));
+                this.WsServer = null;
         } catch (Exception e) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + " " + e.Message);
             this.WsServer = null;
         }
     }
 
-    public async void StopWebSocketServer(Gtk.Label status_bar) {
+    public async void StopWebSocketServer(Gtk.Label statusBar) {
         if (this.WsServer is null) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("server_not_started"));
+            statusBar.SetLabel(Globals.Languages.ServeTrad("server_not_started"));
             return;
         }
         await this.WsServer.StopAsync();
         this.WsServer = null;
-        status_bar.SetLabel(Globals.Languages.ServeTrad("server_stoped"));
+        statusBar.SetLabel(Globals.Languages.ServeTrad("server_stoped"));
     }
 
-    public async void StartWebSocketClient(string server, int port, Gtk.Label status_bar) {
+    public async void StartWebSocketClient(string server, int port, Gtk.Label statusBar) {
         if (!(this.WsClient is null)) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("client_already_started"));
+            statusBar.SetLabel(Globals.Languages.ServeTrad("client_already_started"));
             return;
         }
         if (!(this.WsServer is null)) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("client_did_not_start") + Globals.Languages.ServeTrad("server_already_started"));
+            statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_not_start") + Globals.Languages.ServeTrad("server_already_started"));
             return;
         }
         if (this.GetFileExists()) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("client_did_not_start") + " " + Globals.Languages.ServeTrad("please_create_new_file"));
+            statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_not_start") + " " + Globals.Languages.ServeTrad("please_create_new_file"));
             return;
         }
         this.WsClient = new WSocket.WebSocketClient($"ws://{server}:{port}/");
         try {
             this.WsClient.Connected += (s, e) => Console.WriteLine("Connected to server");
             this.WsClient.Disconnected += (s, e) => {
-                this.StopWebSocketClient(status_bar);
+                this.StopWebSocketClient(statusBar);
                 Console.WriteLine("Disconnected from server");
             };
             this.WsClient.MessageReceived += (s, message) => {
                 Console.WriteLine($"Received: {message}");
-
+                this.HandleWebSocketClientMessage(message);
             };
             this.WsClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
-            status_bar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
+            statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
             await this.WsClient.ConnectAsync();
         } catch (Exception e) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("client_did_not_connect") + " " + e.Message);
+            statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_not_connect") + " " + e.Message);
             this.WsClient.Dispose();
             this.WsClient = null;
         }
     }
 
-    public async void StopWebSocketClient(Gtk.Label status_bar) {
+    public async void StopWebSocketClient(Gtk.Label statusBar) {
         if (this.WsClient is null) {
-            status_bar.SetLabel(Globals.Languages.ServeTrad("client_not_connected"));
+            statusBar.SetLabel(Globals.Languages.ServeTrad("client_not_connected"));
             return;
         }
         await this.WsClient.DisconnectAsync();
         this.WsClient.Dispose();
         this.WsClient = null;
-        status_bar.SetLabel(Globals.Languages.ServeTrad("client_disconnected"));
+        statusBar.SetLabel(Globals.Languages.ServeTrad("client_disconnected"));
+    }
+
+    private void HandleWebSocketClientMessage(string message) {
+        if (message.StartsWith("full\n"))
+            this.Buffer.Text = message;
     }
 
     // Manuals Getters and setters
