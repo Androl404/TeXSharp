@@ -258,8 +258,10 @@ public class SourceEditor {
                 Console.WriteLine("Disconnected from server");
             };
             this.WsClient.MessageReceived += (s, message) => {
-                Console.WriteLine($"Received: {message}");
-                this.HandleWebSocketClientMessage(message);
+                var parser = new WsMessageParser();
+                var final_message = parser.ParseMessage(message);
+                Console.WriteLine($"Received: {final_message.Content}");
+                this.Buffer.Text = final_message.Content;
             };
             this.WsClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
             statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
@@ -280,11 +282,6 @@ public class SourceEditor {
         this.WsClient.Dispose();
         this.WsClient = null;
         statusBar.SetLabel(Globals.Languages.ServeTrad("client_disconnected"));
-    }
-
-    private void HandleWebSocketClientMessage(string message) {
-        if (message.StartsWith("full\n"))
-            this.Buffer.Text = message;
     }
 
     // Manuals Getters and setters

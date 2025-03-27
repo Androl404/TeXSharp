@@ -59,7 +59,7 @@ public class WebSocketServer {
 
             if (clients.TryAdd(clientId, webSocket)) {
                 Console.WriteLine($"Client {clientId} connected");
-                await BroadcastMessageToClient(clientId, "full\n" + this.editor_buffer.Text);
+                await BroadcastMessageToClient(clientId, $"full:{clientId}:START\n" + this.editor_buffer.Text + $"\nfull:{clientId}:STOP\n");
                 await HandleClientSession(clientId, webSocket);
             }
         } catch (Exception ex) {
