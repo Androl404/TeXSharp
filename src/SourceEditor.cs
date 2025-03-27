@@ -58,10 +58,10 @@ public class SourceEditorWrapper {
         // We remove the page from the notebook
         // We make sure that we don't close the first tab. We need at least one tab open
         if (this.EditorNotebook.GetNPages() > 1) {
-            this.EditorNotebook.RemovePage(this.GetCurrentEditorIndex());
+            int EditorToDelete = this.GetCurrentEditorIndex();
+            this.EditorNotebook.RemovePage(EditorToDelete);
             // We remove the editor from the list
-            this.Editors.RemoveAt(this.GetCurrentEditorIndex());
-            this.GetCurrentSourceEditor().SetFileExists(false);
+            this.Editors.RemoveAt(EditorToDelete);
         }
     }
 
