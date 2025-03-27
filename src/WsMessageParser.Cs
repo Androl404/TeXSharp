@@ -73,7 +73,7 @@ public class WsMessageParser {
     /// <summary>
     /// Extracts the client GUID from a message start line
     /// </summary>
-    private string ExtractClientGuid(string message) {
+    private string? ExtractClientGuid(string message) {
         // Expected format: "full:Guid-client:START"
         string[] parts = message.Split(':');
         return parts.Length >= 2 ? parts[1] : null;

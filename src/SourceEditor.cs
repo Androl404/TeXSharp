@@ -146,6 +146,7 @@ public class SourceEditor {
 
     private WSocket.WebSocketClient? WsClient = null;
     private WSocket.WebSocketServer? WsServer = null;
+    private WsMessageParser parser = new WsMessageParser();
 
     public SourceEditor() {
         // Second, we create the buffer and the view
@@ -258,10 +259,12 @@ public class SourceEditor {
                 Console.WriteLine("Disconnected from server");
             };
             this.WsClient.MessageReceived += (s, message) => {
-                var parser = new WsMessageParser();
+                Console.WriteLine("------------------------------------------------\n" + message);
                 var final_message = parser.ParseMessage(message);
-                Console.WriteLine($"Received: {final_message.Content}");
-                this.Buffer.Text = final_message.Content;
+                if (final_message.Type == WsMessageParser.MessageType.FullMessageComplete) {
+                    Console.WriteLine($"Received: {final_message.Content}");
+                    this.Buffer.Text = final_message.Content;
+                }
             };
             this.WsClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
             statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
