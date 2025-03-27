@@ -8,163 +8,158 @@ using GtkSource;
 using Pango;
 
 public class SettingsValues {
-    public string language { get; set; }
-    public string editor_theme { get; set; }
+    public string Language { get; set; }
+    public string EditorTheme { get; set; }
     public SettingsValues() {
-        this.language = "";
-        this.editor_theme = "";
+        this.Language = "";
+        this.EditorTheme = "";
     }
 }
 
 public class Settings {
-    private Gtk.ScrolledWindow scrolled;
+    private Gtk.ScrolledWindow Scrolled = Gtk.ScrolledWindow.New();
     public Gtk.ScrolledWindow _Scrolled {
-        get { return this.scrolled; }
+        get { return this.Scrolled; }
     }
-    private bool showing;
+    private bool Schowing = false;
     public bool _Schowing {
-        get { return this.showing; }
+        get { return this.Schowing; }
     }
-    private Gtk.Box box;
-    private SettingsValues settings_values;
-    public SettingsValues _Settings_values {
-        get { return this.settings_values; }
+    private Gtk.Box Box = Gtk.Box.New(Gtk.Orientation.Vertical, 10);
+    private SettingsValues SettingsValues = new SettingsValues();
+    public SettingsValues _SettingsValues {
+        get { return this.SettingsValues; }
     }
-    private bool toggled;
+    private bool Toggled = false;
 
     public Settings() {
-        this.scrolled = Gtk.ScrolledWindow.New();
-        this.box = Gtk.Box.New(Gtk.Orientation.Vertical, 10);
-        this.scrolled.MinContentWidth = 500;
-        this.scrolled.SetChild(this.box);
-        this.showing = false;
-        this.toggled = false;
-        this.settings_values = new SettingsValues();
+        this.Scrolled.MinContentWidth = 500;
+        this.Scrolled.SetChild(this.Box);
         this.InitSettingsValues();
     }
 
     private void InitSettingsValues() {
         if (!this.SettingExists()) {
-            this.settings_values = new SettingsValues();
-            this.settings_values.language = "English";
-            var settings = Gtk.Settings.GetDefault();
-            if (settings?.GtkApplicationPreferDarkTheme == true || settings?.GtkThemeName?.ToLower()?.Contains("dark") == true)
-                this.settings_values.editor_theme = "Adwaita-dark";
+            this.SettingsValues = new SettingsValues();
+            this.SettingsValues.Language = "English";
+            var Settings = Gtk.Settings.GetDefault();
+            if (Settings?.GtkApplicationPreferDarkTheme == true || Settings?.GtkThemeName?.ToLower()?.Contains("dark") == true)
+                this.SettingsValues.EditorTheme = "Adwaita-dark";
             else
-                this.settings_values.editor_theme = "Adwaita";
+                this.SettingsValues.EditorTheme = "Adwaita";
             this.SaveSettings();
         } else {
             string path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) // If we are on a niche operating system for games
                               ? Environment.ExpandEnvironmentVariables("%appdata%") + "/Local/TeXSharp/config.json"
                               : Environment.GetEnvironmentVariable("HOME") + "/.config/texsharp/config.json";
 
-            this.settings_values = JsonSerializer.Deserialize<SettingsValues>(System.IO.File.ReadAllText(path)) ?? new SettingsValues();
+            this.SettingsValues = JsonSerializer.Deserialize<SettingsValues>(System.IO.File.ReadAllText(path)) ?? new SettingsValues();
         }
     }
 
-    public void OnToggle(SourceEditor editor, Gtk.Label status_bar) {
-        if (!this.toggled) {
+    public void OnToggle(SourceEditorWrapper editorWrapper, Gtk.Label statusBar) {
+        if (!this.Toggled) {
             this.AddMainTitle();
             this.AddLanguagesOptions();
-            this.AddEditorThemeOptions(editor);
-            this.AddCollaborationOptions(editor, status_bar);
-            this.toggled = true;
+            this.AddEditorThemeOptions(editorWrapper);
+            this.AddCollaborationOptions(editorWrapper, statusBar);
+            this.Toggled = true;
         }
     }
 
     private void AddMainTitle() {
-        this.AddText(Globals.lan.ServeTrad("settings"), 20);
-        var port_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 2);
-        var label = Gtk.Label.New(Globals.lan.ServeTrad("choose_port"));
+        this.AddText(Globals.Languages.ServeTrad("settings"), 20);
+        // var PortBox = Gtk.Box.New(Gtk.Orientation.Horizontal, 2);
+        // var Label = Gtk.Label.New(Globals.Languages.ServeTrad("choose_port"));
     }
 
     async private void AddLanguagesOptions() {
-        var lan_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
-        var label = Gtk.Label.New(Globals.lan.ServeTrad("choose_language"));
-        var languages = await Globals.lan.DBGetAllLanguages();
-        string[] lang = languages.ToArray();
-        var drop_down = Gtk.DropDown.NewFromStrings(lang);
-        for (uint i = 0; i < lang.Length; ++i) {
-            if (lang[i] == this.settings_values.language) {
-                drop_down.SetSelected(i);
+        var LanBox = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
+        var Label = Gtk.Label.New(Globals.Languages.ServeTrad("choose_language"));
+        var Languages = await Globals.Languages.DBGetAllLanguages();
+        string[] Lang = Languages.ToArray();
+        var DropDown = Gtk.DropDown.NewFromStrings(Lang);
+        for (uint i = 0; i < Lang.Length; ++i) {
+            if (Lang[i] == this.SettingsValues.Language) {
+                DropDown.SetSelected(i);
             }
         }
-        drop_down.OnNotify += (sender, args) => {
-            this.settings_values.language = lang[drop_down.GetSelected()];
+        DropDown.OnNotify += (sender, args) => {
+            this.SettingsValues.Language = Lang[DropDown.GetSelected()];
             this.SaveSettings();
         };
-        lan_box.Append(label);
-        lan_box.Append(drop_down);
-        this.box.Append(lan_box);
+        LanBox.Append(Label);
+        LanBox.Append(DropDown);
+        this.Box.Append(LanBox);
     }
 
-    private void AddEditorThemeOptions(SourceEditor editor) {
-        var scheme_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
-        var label = Gtk.Label.New(Globals.lan.ServeTrad("choose_theme"));
-        string[] themes = { "Adwaita-dark", "classic-dark", "cobalt-light", "kate-dark", "oblivion", "solarized-light", "tango", "Yaru", "Adwaita", "classic", "cobalt", "kate", "solarized-dark", "Yaru-dark" };
-        var drop_down = Gtk.DropDown.NewFromStrings(themes);
-        for (uint i = 0; i < themes.Length; ++i) {
-            if (themes[i] == this.settings_values.editor_theme) {
-                drop_down.SetSelected(i);
+    private void AddEditorThemeOptions(SourceEditorWrapper editorWrapper) {
+        var SchemeBox = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
+        var Label = Gtk.Label.New(Globals.Languages.ServeTrad("choose_theme"));
+        string[] Themes = { "Adwaita-dark", "classic-dark", "cobalt-light", "kate-dark", "oblivion", "solarized-light", "tango", "Yaru", "Adwaita", "classic", "cobalt", "kate", "solarized-dark", "Yaru-dark" };
+        var DropDown = Gtk.DropDown.NewFromStrings(Themes);
+        for (uint i = 0; i < Themes.Length; ++i) {
+            if (Themes[i] == this.SettingsValues.EditorTheme) {
+                DropDown.SetSelected(i);
             }
         }
-        drop_down.OnNotify += (sender, args) => {
-            this.settings_values.editor_theme = themes[drop_down.GetSelected()];
-            editor.ChangeEditorTheme(this.settings_values.editor_theme);
+        DropDown.OnNotify += (sender, args) => {
+            this.SettingsValues.EditorTheme = Themes[DropDown.GetSelected()];
+            editorWrapper.GetCurrentSourceEditor().ChangeEditorTheme(this.SettingsValues.EditorTheme);
             this.SaveSettings();
         };
-        scheme_box.Append(label);
-        scheme_box.Append(drop_down);
-        this.box.Append(scheme_box);
+        SchemeBox.Append(Label);
+        SchemeBox.Append(DropDown);
+        this.Box.Append(SchemeBox);
     }
 
     private void AddText(string text, int size) {
-        var attr_list = Pango.AttrList.New();
-        var font = Pango.FontDescription.New();
-        font.SetWeight(Pango.Weight.Bold);
-        font.SetSize(size * Globals.PAGNO_SCALE);
-        var font_attribute = Pango.AttrFontDesc.New(font);
-        attr_list.Insert(font_attribute);
-        var label = Gtk.Label.New(text);
-        label.SetAttributes(attr_list);
-        this.box.Append(label);
+        var AttrList = Pango.AttrList.New();
+        var Font = Pango.FontDescription.New();
+        Font.SetWeight(Pango.Weight.Bold);
+        Font.SetSize(size * Globals.PangoScale);
+        var FontAttribute = Pango.AttrFontDesc.New(Font);
+        AttrList.Insert(FontAttribute);
+        var Label = Gtk.Label.New(text);
+        Label.SetAttributes(AttrList);
+        this.Box.Append(Label);
     }
 
-    private void AddCollaborationOptions(SourceEditor editor, Gtk.Label status_bar) {
-        this.AddText(Globals.lan.ServeTrad("rt_collaboration"), 12);
-        this.AddText(Globals.lan.ServeTrad("server"), 10);
-        var port_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
-        var spin_button = Gtk.SpinButton.NewWithRange(1024, 49151, 1);
-        port_box.Append(Gtk.Label.New(Globals.lan.ServeTrad("choose_port") + " :"));
-        port_box.Append(spin_button);
-        this.box.Append(port_box);
-        var button_start = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("start_server"));
-        var button_stop = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("stop_server"));
-        button_start.SetMarginEnd(12);
-        button_stop.SetMarginEnd(12);
-        button_start.OnClicked += (serder, args) => { editor.StartWebSocketServer((int)spin_button.GetValue(), status_bar); };
-        button_stop.OnClicked += (serder, args) => { editor.StopWebSocketServer(status_bar); };
-        this.box.Append(button_start);
-        this.box.Append(button_stop);
-        this.AddText(Globals.lan.ServeTrad("client"), 10);
-        var _ip_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
-        var entry = Gtk.Entry.New();
-        _ip_box.Append(Gtk.Label.New(Globals.lan.ServeTrad("choose_server") + " (IP) :"));
-        _ip_box.Append(entry);
-        var _port_box = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
-        var _spin_button = Gtk.SpinButton.NewWithRange(1024, 49151, 1);
-        _port_box.Append(Gtk.Label.New(Globals.lan.ServeTrad("choose_port") + " :"));
-        _port_box.Append(_spin_button);
-        this.box.Append(_ip_box);
-        this.box.Append(_port_box);
-        var _button_start = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("connect"));
-        _button_start.SetMarginEnd(12);
-        var _button_stop = Gtk.Button.NewWithLabel(Globals.lan.ServeTrad("disconnect"));
-        _button_stop.SetMarginEnd(12);
-        _button_start.OnClicked += (serder, args) => { editor.StartWebSocketClient(entry.GetText(), (int)_spin_button.GetValue(), status_bar); };
-        _button_stop.OnClicked += (serder, args) => { editor.StopWebSocketClient(status_bar); };
-        this.box.Append(_button_start);
-        this.box.Append(_button_stop);
+    private void AddCollaborationOptions(SourceEditorWrapper editorWrapper, Gtk.Label statusBar) {
+        this.AddText(Globals.Languages.ServeTrad("rt_collaboration"), 12);
+        this.AddText(Globals.Languages.ServeTrad("server"), 10);
+        var PortBox = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
+        var SpinButton = Gtk.SpinButton.NewWithRange(1024, 49151, 1);
+        PortBox.Append(Gtk.Label.New(Globals.Languages.ServeTrad("choose_port") + " :"));
+        PortBox.Append(SpinButton);
+        this.Box.Append(PortBox);
+        var ButtonStart = Gtk.Button.NewWithLabel(Globals.Languages.ServeTrad("start_server"));
+        var ButtonStop = Gtk.Button.NewWithLabel(Globals.Languages.ServeTrad("stop_server"));
+        ButtonStart.SetMarginEnd(12);
+        ButtonStop.SetMarginEnd(12);
+        ButtonStart.OnClicked += (serder, args) => { editorWrapper.GetCurrentSourceEditor().StartWebSocketServer((int)SpinButton.GetValue(), statusBar); };
+        ButtonStop.OnClicked += (serder, args) => { editorWrapper.GetCurrentSourceEditor().StopWebSocketServer(statusBar); };
+        this.Box.Append(ButtonStart);
+        this.Box.Append(ButtonStop);
+        this.AddText(Globals.Languages.ServeTrad("client"), 10);
+        var _IpBox = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
+        var Entry = Gtk.Entry.New();
+        _IpBox.Append(Gtk.Label.New(Globals.Languages.ServeTrad("choose_server") + " (IP) :"));
+        _IpBox.Append(Entry);
+        var _PortBox = Gtk.Box.New(Gtk.Orientation.Horizontal, 5);
+        var _SpinButton = Gtk.SpinButton.NewWithRange(1024, 49151, 1);
+        _PortBox.Append(Gtk.Label.New(Globals.Languages.ServeTrad("choose_port") + " :"));
+        _PortBox.Append(_SpinButton);
+        this.Box.Append(_IpBox);
+        this.Box.Append(_PortBox);
+        var _ButtonStart = Gtk.Button.NewWithLabel(Globals.Languages.ServeTrad("connect"));
+        _ButtonStart.SetMarginEnd(12);
+        var _ButtonStop = Gtk.Button.NewWithLabel(Globals.Languages.ServeTrad("disconnect"));
+        _ButtonStop.SetMarginEnd(12);
+        _ButtonStart.OnClicked += (serder, args) => { editorWrapper.GetCurrentSourceEditor().StartWebSocketClient(Entry.GetText(), (int)_SpinButton.GetValue(), statusBar); };
+        _ButtonStop.OnClicked += (serder, args) => { editorWrapper.GetCurrentSourceEditor().StopWebSocketClient(statusBar); };
+        this.Box.Append(_ButtonStart);
+        this.Box.Append(_ButtonStop);
     }
 
     private bool SettingExists() {
@@ -176,25 +171,25 @@ public class Settings {
     }
 
     private void SaveSettings() {
-        byte[] jsonUtf8Bytes = JsonSerializer.SerializeToUtf8Bytes(this.settings_values); // Faster and better
-        string path = "";
+        byte[] JsonUtf8Bytes = JsonSerializer.SerializeToUtf8Bytes(this.SettingsValues); // Faster and better
+        string Path = "";
         if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) { // If we are on a niche operating system for games
-            string appdata = Environment.ExpandEnvironmentVariables("%appdata%");
-            System.IO.Directory.CreateDirectory(appdata + "/Local/TeXSharp/");
-            path = appdata + "/Local/TeXSharp/config.json";
+            string AppData = Environment.ExpandEnvironmentVariables("%appdata%");
+            System.IO.Directory.CreateDirectory(AppData + "/Local/TeXSharp/");
+            Path = AppData + "/Local/TeXSharp/config.json";
         } else { // Unix-based OS
-            string home_user = Environment.GetEnvironmentVariable("HOME") ?? "/home/";
-            System.IO.Directory.CreateDirectory(home_user + "/.config");
-            System.IO.Directory.CreateDirectory(home_user + "/.config/texsharp");
-            path = home_user + "/.config/texsharp/config.json";
+            string HomeUser = Environment.GetEnvironmentVariable("HOME") ?? "/home/";
+            System.IO.Directory.CreateDirectory(HomeUser + "/.config");
+            System.IO.Directory.CreateDirectory(HomeUser + "/.config/texsharp");
+            Path = HomeUser + "/.config/texsharp/config.json";
         }
-        System.IO.File.WriteAllBytes(path, jsonUtf8Bytes);
+        System.IO.File.WriteAllBytes(Path, JsonUtf8Bytes);
     }
 
     // Manuals getters
-    public Gtk.ScrolledWindow GetScrolledWindow() { return this.scrolled; }
-    public bool GetShowing() { return this.showing; }
+    public Gtk.ScrolledWindow GetScrolledWindow() { return this.Scrolled; }
+    public bool GetShowing() { return this.Schowing; }
 
     // Manuels setters
-    public void SetShowing(bool is_showing) { this.showing = is_showing; }
+    public void SetShowing(bool isShowing) { this.Schowing = isShowing; }
 }

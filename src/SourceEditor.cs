@@ -1,32 +1,103 @@
+using Gtk;
 using GtkSource;
 
+public class SourceEditorWrapper {
+    private Gtk.Notebook EditorNotebook = Gtk.Notebook.New();
+    public Gtk.Notebook _EditorNotebook {
+        get { return this.EditorNotebook; }
+    }
+
+    private List<SourceEditor> Editors = new List<SourceEditor>();
+
+    public SourceEditorWrapper() {
+        this.Editors.Add(new SourceEditor());
+        this.EditorNotebook.AppendPage(this.Editors[0]._Box, EditorNotebookTabLabel(Globals.Languages.ServeTrad("new_file")));
+    }
+
+    // Simple function to create a tab label for the Notebook pages. It simply returns a box with a label, the name of the file, and a close button (symbol of a cross) to close the tab
+    public Gtk.Box EditorNotebookTabLabel(string label) {
+        // We create the label
+        Gtk.Label tabLabel = Gtk.Label.New(label);
+
+        // We create the button
+        Gtk.Button tabCloseButton = Gtk.Button.NewFromIconName("window-close-symbolic");
+        tabCloseButton.SetHasFrame(false);
+        tabCloseButton.OnClicked += (sender, args) => { this.CloseFile(); };
+
+        // We create the box that will contain the label and the button
+        Gtk.Box tabBox = Gtk.Box.New(Gtk.Orientation.Horizontal, 10);
+        tabBox.Append(tabLabel);
+        tabBox.Append(tabCloseButton);
+
+        return tabBox;
+    }
+
+    public void NewFile() {
+        this.Editors.Add(new SourceEditor());
+        this.EditorNotebook.AppendPage(this.Editors[Editors.Count - 1]._Box, EditorNotebookTabLabel(Globals.Languages.ServeTrad("new_file")));
+        this.EditorNotebook.NextPage();
+    }
+
+    public void OpenFile(string? path) {
+        if (path is null)
+            throw new System.ArgumentNullException("String path is null, cannot open file");
+        this.Editors.Add(new SourceEditor());
+        this.Editors[Editors.Count - 1].OpenFile(path);
+        this.EditorNotebook.AppendPage(this.Editors[Editors.Count - 1]._Box, EditorNotebookTabLabel(path.Split('/').Last()));
+        this.EditorNotebook.NextPage();
+    }
+
+    public void SaveFile(string? path) {
+        if (path is null)
+            throw new System.ArgumentNullException("String path is null, cannot save file");
+        this.Editors[this.GetCurrentEditorIndex()].SaveFile(path);
+        this.EditorNotebook.SetTabLabel(this.EditorNotebook.GetNthPage(this.GetCurrentEditorIndex()), EditorNotebookTabLabel(path.Split('/').Last()));
+    }
+
+    public void CloseFile() {
+        // We remove the page from the notebook
+        // We make sure that we don't close the first tab. We need at least one tab open
+        if (this.EditorNotebook.GetNPages() > 1) {
+            this.EditorNotebook.RemovePage(this.GetCurrentEditorIndex());
+            // We remove the editor from the list
+            this.Editors.RemoveAt(this.GetCurrentEditorIndex());
+            this.GetCurrentSourceEditor().SetFileExists(false);
+        }
+    }
+
+    // Manuals getters and setters
+    public int GetCurrentEditorIndex() {
+        // We get the current page number
+        return this.EditorNotebook.GetCurrentPage();
+    }
+    public SourceEditor GetCurrentSourceEditor() {
+        // We get the current page number
+        return this.Editors[this.EditorNotebook.GetCurrentPage()];
+    }
+}
+
 public class SourceEditor {
-    private GtkSource.Buffer buffer;
+    private GtkSource.Buffer Buffer;
     public GtkSource.Buffer _Buffer {
-        get { return this.buffer; } // get method
+        get { return this.Buffer; } // get method
     }
 
-    private GtkSource.View view;
+    private GtkSource.View View;
     public GtkSource.View _View {
-        get { return this.view; } // get method
+        get { return this.View; } // get method
     }
 
-    private string path;
+    private string Path;
     public string _Path {
-        get { return this.path; }
+        get { return this.Path; }
     }
 
-    private string name;
-    public string _Name {
-        get { return this.name; }
+    private bool FileExists = false;
+    public bool _FileExists {
+        get { return this.FileExists; }
     }
 
-    private bool file_exists = false;
-    public bool _Exists {
-        get { return this.file_exists; }
-    }
-
-    private LanguageManager language_manager;
+    private LanguageManager LanguageManager = GtkSource.LanguageManager.New();
 
     private GtkSource.VimIMContext VIMmode = GtkSource.VimIMContext.New();
     public GtkSource.VimIMContext _VIMmode {
@@ -49,107 +120,61 @@ public class SourceEditor {
         get { return this.TextEntry; }
     }
 
-    private Gtk.Notebook editor_notebook = Gtk.Notebook.New();
-    public Gtk.Notebook _EditorNotebook {
-        get { return this.editor_notebook; }
+    private Gtk.ScrolledWindow Scrolled = Gtk.ScrolledWindow.New();
+    public Gtk.ScrolledWindow _Scrolled {
+        get { return this.Scrolled; }
     }
 
-    public List<SourceEditor> editors = new List<SourceEditor>();
+    private Gtk.Box Box = Gtk.Box.New(Gtk.Orientation.Vertical, 0);
+    public Gtk.Box _Box {
+        get { return this.Box; }
+    }
 
-    private WSocket.WebSocketClient? ws_client = null;
-    private WSocket.WebSocketServer? ws_server = null;
+    private WSocket.WebSocketClient? WsClient = null;
+    private WSocket.WebSocketServer? WsServer = null;
 
-    public SourceEditor(int index) {
-        // First, the name of the editor is set (it should start at 0). We use an index variable to be sure the name is unique. Otherwise, each editor will have the same name (for example, editor0)
-        this.name = "editor" + index;
-
+    public SourceEditor() {
         // Second, we create the buffer and the view
-        this.buffer = GtkSource.Buffer.New(null);
-        this.view = GtkSource.View.NewWithBuffer(this.buffer);
+        this.Buffer = GtkSource.Buffer.New(null);
+        this.View = GtkSource.View.NewWithBuffer(this.Buffer);
 
         // We set some properties to the view
-        this.view.Monospace = true;
-        this.view.ShowLineNumbers = true;
-        this.view.HighlightCurrentLine = true;
-        this.view.SetTabWidth(4);
+        this.View.Monospace = true;
+        this.View.ShowLineNumbers = true;
+        this.View.HighlightCurrentLine = true;
+        this.View.SetTabWidth(4);
 
         // We set the style scheme of the buffer
-        this.buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(Globals.settings._Settings_values.editor_theme));
+        this.Buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(Globals.Settings._SettingsValues.EditorTheme));
 
         // We set the path to an empty string by default
-        this.path = string.Empty;
+        this.Path = string.Empty;
 
-        // We create a new language manager, so we can guess the language (for example latex) of the file
-        this.language_manager = GtkSource.LanguageManager.New();
+        this.Scrolled.SetHexpand(true);
+        this.Scrolled.SetVexpand(true);
+        this.Scrolled.SetChild(this.View);
+        this.Box.Append(this.Scrolled);
+        this.Box.Append(this.TextEntry);
+        this.TextEntry.Hide();
+        this.NewFile();
     }
 
     public void NewFile() {
-        // First, we create the editor
-        this.editors.Add(new SourceEditor(this.editors.Count));
-
-        // Second step, we create the scrolled window that will contain the editor
-        var scrolled_window = new Gtk.ScrolledWindow();
-        scrolled_window.SetHexpand(true);
-        scrolled_window.SetVexpand(true);
-
-        // Third step, we add the view (what we see) to the scrolled window
-        scrolled_window.SetChild(this.editors[this.editors.Count - 1].view);
-
-        // Fourth step, we add the scrolled window as a page of the notebook
-        this.editor_notebook.AppendPage(scrolled_window, EditorNotebookTabLabel(Globals.lan.ServeTrad("new_file")));
-        // We then move to the next page. So the one we just created
-        this.editor_notebook.NextPage();
+        this.FileExists = false;
+        this.Buffer.Text = "";
     }
 
-    // Simple function to create a tab label for the Notebook pages. It simply returns a box with a label, the name of the file, and a close button (symbol of a cross) to close the tab
-    public Gtk.Box EditorNotebookTabLabel(string label) {
-        // We create the label
-        Gtk.Label tabLabel = Gtk.Label.New(label);
-
-        // We create the button
-        Gtk.Button tabCloseButton = Gtk.Button.NewFromIconName("window-close-symbolic");
-        tabCloseButton.SetHasFrame(false);
-        tabCloseButton.OnClicked += (o, args) => { this.CloseFile(); };
-
-        // We create the box that will contain the label and the button
-        Gtk.Box tabBox = Gtk.Box.New(Gtk.Orientation.Horizontal, 10);
-        tabBox.Append(tabLabel);
-        tabBox.Append(tabCloseButton);
-
-        return tabBox;
-    }
-
-    public void OpenFile(string? path) {
-        // First, we create the editor
-        this.editors.Add(new SourceEditor(this.editors.Count));
-
-        // We check if the path is null. If it is, we throw an exception
+    public void OpenFile(string path) {
         if (path is null)
             throw new System.ArgumentNullException("String path is null, cannot open file");
-
-        // Second step, we create the scrolled window that will contain the editor
-        var scrolled_window = new Gtk.ScrolledWindow();
-        scrolled_window.SetHexpand(true);
-        scrolled_window.SetVexpand(true);
-
-        // Third step, we add the view (what we see) to the scrolled window
-        scrolled_window.SetChild(this.editors[this.editors.Count - 1].view);
-
-        // Fourth step, we add the scrolled window as a page of the notebook. And we extract the name of the file from the path
-        this.editor_notebook.AppendPage(scrolled_window, EditorNotebookTabLabel(path.Split('/').Last()));
-        // We then go to the next page. So the one we just created.
-        // The reason why we do this is because we work with the current page/editor. So if we don't go to the next page, the path will be set to the previous page. Same for the buffer. resulting in a wrong path and buffer. Typically, if we don't do this, we will open a new tab, with a blank buffer,
-        // and the text we read from the file, will be put in the previous tab. Which isn't ideal
-        this.editor_notebook.NextPage();
         this.SetPath(path);
 
-        this.SetFileExists(true);
-
         this.GetBuffer().Text = System.IO.File.ReadAllText(this.GetPath());
+        this.SetFileExists(true);
         this.SetBufferLanguage();
     }
 
-    public void SaveFile(string? path) {
+    public void SaveFile(string path) {
         if (path is null)
             throw new System.ArgumentNullException("String path is null, cannot save file");
         if (!this.GetFileExists()) {
@@ -157,57 +182,109 @@ public class SourceEditor {
         }
         System.IO.File.WriteAllText(path, this.GetBuffer().Text);
         this.SetFileExists(true);
-        this.editors[this.GetCurrentEditorIndex()].buffer.Language = this.language_manager.GuessLanguage(path, null);
+        this.Buffer.Language = this.LanguageManager.GuessLanguage(path, null);
         this.SetBufferLanguage();
     }
 
-    public void CloseFile() {
-        // We remove the page from the notebook
-        // We make sure that we don't close the first tab. We need at least one tab open
-        if (this.editor_notebook.GetNPages() == 1) {
-        } else {
-            this.editor_notebook.RemovePage(this.GetCurrentEditorIndex());
-            // We remove the editor from the list
-            this.editors.RemoveAt(this.GetCurrentEditorIndex());
+    public void ChangeEditorTheme(string theme) { this.Buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(theme)); }
+
+    public async void StartWebSocketServer(int port, Gtk.Label status_bar) {
+        if (!(this.WsServer is null)) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("server_already_started"));
+            return;
+        }
+        if (!(this.WsClient is null)) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + Globals.Languages.ServeTrad("client_already_started"));
+            return;
+        }
+        if (!(this.GetFileExists())) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + " " + Globals.Languages.ServeTrad("not_saved"));
+            return;
+        }
+        this.WsServer = new WSocket.WebSocketServer(port, this.GetBuffer());
+        try {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("server_did_start"));
+            await this.WsServer.StartAsync();
+        } catch (Exception e) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + " " + e.Message);
+            this.WsServer = null;
         }
     }
 
-    public void ChangeEditorTheme(string theme) { this.editors[this.GetCurrentEditorIndex()].buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(theme)); }
-
-    public async void StartWebSocketServer(int port, Gtk.Label status_bar) { throw new System.NotImplementedException("Not implemented yet."); }
-
-    public async void StopWebSocketServer(Gtk.Label status_bar) { throw new System.NotImplementedException("Not implemented yet."); }
-
-    public async void StartWebSocketClient(string server, int port, Gtk.Label status_bar) { throw new System.NotImplementedException("Not implemented yet."); }
-
-    public async void StopWebSocketClient(Gtk.Label status_bar) { throw new System.NotImplementedException("Not implemented yet."); }
-
-    // Manuals Getters
-
-    public int GetCurrentEditorIndex() {
-        // We get the current page number
-        int current_page_number = editor_notebook.GetCurrentPage();
-        return current_page_number;
+    public async void StopWebSocketServer(Gtk.Label status_bar) {
+        if (this.WsServer is null) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("server_not_started"));
+            return;
+        }
+        await this.WsServer.StopAsync();
+        this.WsServer = null;
+        status_bar.SetLabel(Globals.Languages.ServeTrad("server_stoped"));
     }
 
-    public GtkSource.Buffer GetBuffer() { return this.editors[this.GetCurrentEditorIndex()].buffer; }
+    public async void StartWebSocketClient(string server, int port, Gtk.Label status_bar) {
+        if (!(this.WsClient is null)) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("client_already_started"));
+            return;
+        }
+        if (!(this.WsServer is null)) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("client_did_not_start") + Globals.Languages.ServeTrad("server_already_started"));
+            return;
+        }
+        if (this.GetFileExists()) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("client_did_not_start") + " " + Globals.Languages.ServeTrad("please_create_new_file"));
+            return;
+        }
+        this.WsClient = new WSocket.WebSocketClient($"ws://{server}:{port}/");
+        try {
+            this.WsClient.Connected += (s, e) => Console.WriteLine("Connected to server");
+            this.WsClient.Disconnected += (s, e) => {
+                this.StopWebSocketClient(status_bar);
+                Console.WriteLine("Disconnected from server");
+            };
+            this.WsClient.MessageReceived += (s, message) => {
+                Console.WriteLine($"Received: {message}");
+
+            };
+            this.WsClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
+            status_bar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
+            await this.WsClient.ConnectAsync();
+        } catch (Exception e) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("client_did_not_connect") + " " + e.Message);
+            this.WsClient.Dispose();
+            this.WsClient = null;
+        }
+    }
+
+    public async void StopWebSocketClient(Gtk.Label status_bar) {
+        if (this.WsClient is null) {
+            status_bar.SetLabel(Globals.Languages.ServeTrad("client_not_connected"));
+            return;
+        }
+        await this.WsClient.DisconnectAsync();
+        this.WsClient.Dispose();
+        this.WsClient = null;
+        status_bar.SetLabel(Globals.Languages.ServeTrad("client_disconnected"));
+    }
+
+    // Manuals Getters and setters
+    public GtkSource.Buffer GetBuffer() { return this.Buffer; }
     // Useless for now. Eventually have a use case for the shortcuts, but it doesn't seem to work right now
-    public GtkSource.View GetView() { return this.editors[this.GetCurrentEditorIndex()].view; }
+    public GtkSource.View GetView() { return this.View; }
 
-    public string GetPath() { return this.editors[this.GetCurrentEditorIndex()].path; }
-    public void SetPath(string path) { this.editors[this.GetCurrentEditorIndex()].path = path; }
+    public string GetPath() { return this.Path; }
+    public void SetPath(string path) { this.Path = path; }
 
-    public bool GetFileExists() { return this.editors[this.GetCurrentEditorIndex()].file_exists; }
-    public void SetFileExists(bool file_exists) { this.editors[this.GetCurrentEditorIndex()].file_exists = file_exists; }
+    public bool GetFileExists() { return this.FileExists; }
+    public void SetFileExists(bool fileExists) { this.FileExists = fileExists; }
 
-    private void SetBufferLanguage() { this.editors[this.GetCurrentEditorIndex()].buffer.Language = this.editors[this.GetCurrentEditorIndex()].language_manager.GuessLanguage(this.editors[this.GetCurrentEditorIndex()].path, null); }
+    private void SetBufferLanguage() { this.Buffer.Language = this.LanguageManager.GuessLanguage(this.Path, null); }
 
-    public bool GetVIMmodeEnabled() { return this.editors[this.GetCurrentEditorIndex()].VIMmodeEnabled; }
-    public void SetVIMmodeEnabled(bool VIMmodeEnabled) { this.editors[this.GetCurrentEditorIndex()].VIMmodeEnabled = VIMmodeEnabled; }
+    public bool GetVIMmodeEnabled() { return this.VIMmodeEnabled; }
+    public void SetVIMmodeEnabled(bool VIMmodeEnabled) { this.VIMmodeEnabled = VIMmodeEnabled; }
 
-    public Gtk.Entry GetTextEntry() { return this.editors[this.GetCurrentEditorIndex()].TextEntry; }
+    public Gtk.Entry GetTextEntry() { return this.TextEntry; }
 
-    public GtkSource.VimIMContext GetVIMmode() { return this.editors[this.GetCurrentEditorIndex()].VIMmode; }
+    public GtkSource.VimIMContext GetVIMmode() { return this.VIMmode; }
 
-    public Gtk.EventControllerKey GetVIMeventControllerKey() { return this.editors[this.GetCurrentEditorIndex()].VIMeventControllerKey; }
+    public Gtk.EventControllerKey GetVIMeventControllerKey() { return this.VIMeventControllerKey; }
 }

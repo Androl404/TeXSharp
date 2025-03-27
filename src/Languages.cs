@@ -4,94 +4,91 @@ using Microsoft.Data.Sqlite;
 public class Languages {
     private Dictionary<string, string>? Traduction;
     private string DBPath;
-    private string locale;
-    private string language;
+    private string Locale = string.Empty;
+    private string Language = string.Empty;
 
     public Languages(string DBPath) {
         this.DBPath = DBPath;
         this.AfterConstruction();
-        this.locale = "";
-        this.language = "";
     }
 
     async public void AfterConstruction() {
-        this.locale = await DBGetLocaleFromLanguage(Globals.settings._Settings_values.language);
+        this.Locale = await DBGetLocaleFromLanguage(Globals.Settings._SettingsValues.Language);
         this.DBGetLanguage();
         this.DBGetTrad();
     }
 
     async public Task<List<string>> DBGetAllLanguages() {
-        await using var conn = new SqliteConnection($"Data Source={this.DBPath}");
-        List<string> languages = new List<string>();
+        await using var Conn = new SqliteConnection($"Data Source={this.DBPath}");
+        List<string> Languages = new List<string>();
         try {
-            await conn.OpenAsync();
-            await using var cmd = new SqliteCommand($"SELECT * FROM LANGUAGES", conn);
-            await using var dataReader = await cmd.ExecuteReaderAsync();
+            await Conn.OpenAsync();
+            await using var Cmd = new SqliteCommand($"SELECT * FROM LANGUAGES", Conn);
+            await using var DataReader = await Cmd.ExecuteReaderAsync();
 
-            while (await dataReader.ReadAsync()) {
-                languages.Add((string)dataReader["full_name"]);
+            while (await DataReader.ReadAsync()) {
+                Languages.Add((string)DataReader["full_name"]);
             }
-            await conn.CloseAsync();
+            await Conn.CloseAsync();
         } catch (Exception e) {
             throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
         }
-        return languages;
+        return Languages;
     }
 
     async private Task<string> DBGetLocaleFromLanguage(string language) {
-        await using var conn = new SqliteConnection($"Data Source={this.DBPath}");
-        string locale = "";
+        await using var Conn = new SqliteConnection($"Data Source={this.DBPath}");
+        string Locale = "";
         try {
-            await conn.OpenAsync();
-            await using var cmd = new SqliteCommand($"SELECT locale FROM LANGUAGES WHERE full_name = '{language}'", conn);
-            await using var dataReader = await cmd.ExecuteReaderAsync();
+            await Conn.OpenAsync();
+            await using var Cmd = new SqliteCommand($"SELECT locale FROM LANGUAGES WHERE full_name = '{language}'", Conn);
+            await using var DataReader = await Cmd.ExecuteReaderAsync();
 
-            while (await dataReader.ReadAsync()) {
-                locale = (string)dataReader["locale"];
+            while (await DataReader.ReadAsync()) {
+                Locale = (string)DataReader["locale"];
             }
-            this.locale = locale;
-            await conn.CloseAsync();
+            this.Locale = Locale;
+            await Conn.CloseAsync();
         } catch (Exception e) {
             throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
         }
-        return locale;
+        return Locale;
     }
 
     async private void DBGetLanguage() {
-        await using var conn = new SqliteConnection($"Data Source={this.DBPath}");
+        await using var Conn = new SqliteConnection($"Data Source={this.DBPath}");
         try {
-            await conn.OpenAsync();
-            await using var cmd = new SqliteCommand($"SELECT table_name FROM LANGUAGES WHERE locale = '{this.locale}'", conn);
-            await using var dataReader = await cmd.ExecuteReaderAsync();
+            await Conn.OpenAsync();
+            await using var Cmd = new SqliteCommand($"SELECT table_name FROM LANGUAGES WHERE locale = '{this.Locale}'", Conn);
+            await using var DataReader = await Cmd.ExecuteReaderAsync();
 
-            while (await dataReader.ReadAsync()) {
-                this.language = (string)dataReader["table_name"];
+            while (await DataReader.ReadAsync()) {
+                this.Language = (string)DataReader["table_name"];
             }
-            await conn.CloseAsync();
+            await Conn.CloseAsync();
         } catch (Exception e) {
             throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
         }
     }
 
     async private void DBGetTrad() {
-        await using var conn = new SqliteConnection($"Data Source={this.DBPath}");
+        await using var Conn = new SqliteConnection($"Data Source={this.DBPath}");
 
         try {
-            await conn.OpenAsync();
-
-            await using var cmd = new SqliteCommand($"SELECT field, traduction FROM {this.language}", conn);
-            await using var dataReader = await cmd.ExecuteReaderAsync();
+            await Conn.OpenAsync();
+            await using var Cmd = new SqliteCommand($"SELECT field, traduction FROM {this.Language}", Conn);
+            await using var DataReader = await Cmd.ExecuteReaderAsync();
 
             this.Traduction = new Dictionary<string, string>();
-            if (!dataReader.HasRows)
+            if (!DataReader.HasRows)
                 throw new System.IndexOutOfRangeException("Database response is empty");
-            while (await dataReader.ReadAsync()) {
-                string? mkey = Convert.ToString(dataReader["field"]); // (string)
-                string? mvalue = Convert.ToString(dataReader["traduction"]);
-                if (mkey != null && mvalue != null)
-                    this.Traduction.Add(mkey, mvalue);
+            while (await DataReader.ReadAsync()) {
+                string? Mkey = Convert.ToString(DataReader["field"]); // (string)
+                string? Mvalue = Convert.ToString(DataReader["traduction"]);
+                if (Mkey != null && Mvalue != null)
+                    this.Traduction.Add(Mkey, Mvalue);
             }
-            await conn.CloseAsync();
+            await Conn.CloseAsync();
         } catch (Exception e) {
             throw new System.NullReferenceException("Erreur lors de la connection et de la récupération des données de la la base de données.\n" + e);
         }

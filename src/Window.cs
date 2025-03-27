@@ -8,46 +8,41 @@ using GLib;
 using Cairo;
 
 class Window {
-    private Gio.Application sender;  // The sender args on window activation
+    private Gio.Application Sender;  // The sender args on window activation
     public Gio.Application _Sender { // Public property used to access the sender attribute in read-only
-        get { return this.sender; }  // get method
+        get { return this.Sender; }  // get method
     }
-    private Gtk.ApplicationWindow window;  // The main window
-    public Gtk.ApplicationWindow _Window { // Public property used to access the window attribute in read-only
-        get { return this.window; }        // get method
+    private Gtk.ApplicationWindow MWindow;  // The main window
+    public Gtk.ApplicationWindow _MWindow { // Public property used to access the window attribute in read-only
+        get { return this.MWindow; }        // get method
     }
-    private Gtk.Grid grid;
+    private Gtk.Grid Grid = Gtk.Grid.New();
     public Gtk.Grid _Grid {
-        get { return this.grid; } // get method
+        get { return this.Grid; } // get method
     }
 
-    private ButtonBar button_bar;
+    private ButtonBar ButtonBar = new ButtonBar();
     private Gtk.ScrolledWindow? PDFViewer;
     private Gtk.ScrolledWindow TextEditor;
 
-    private SourceEditor editor = new SourceEditor(0);
+    private SourceEditorWrapper EditorWrapper = new SourceEditorWrapper();
 
     // Constructor of the windows
     // Takes title, size, and flag from event in Main
     public Window(string title, int sizeX, int sizeY, Gio.Application sender) {
-        this.window = Gtk.ApplicationWindow.New((Gtk.Application)sender); // Create the window
-        this.window.Title = title;                                        // Set the title
-        this.window.SetDefaultSize(sizeX, sizeY);                         // Set the size (x, y)
-        this.window.Show();                                               // Show the window (it's always better to see it)
+        this.MWindow = Gtk.ApplicationWindow.New((Gtk.Application)sender); // Create the window
+        this.MWindow.Title = title;                                        // Set the title
+        this.MWindow.SetDefaultSize(sizeX, sizeY);                         // Set the size (x, y)
+        this.MWindow.Show();                                               // Show the window (it's always better to see it)
         // To set the sender arg
-        this.sender = sender;
+        this.Sender = sender;
         // To create the grid
-        this.grid = Gtk.Grid.New();
-        grid.SetHexpand(true);
-        grid.SetVexpand(true);
-        this.grid.ColumnSpacing = 10;
-        this.window.SetChild(this.grid); // Set the grid as the window's child
-        this.grid.Attach(this.editor._EditorNotebook, 0, 1, 1, 1);
-        this.editor._EditorNotebook.SetScrollable(true);
-
-        // We create the first editor, so the first page of the notebook (see SourceEditor.cs)
-        GetFunc("new")(null, null);
-        this.button_bar = new ButtonBar();
+        this.Grid.SetHexpand(true);
+        this.Grid.SetVexpand(true);
+        this.Grid.ColumnSpacing = 10;
+        this.MWindow.SetChild(this.Grid); // Set the grid as the window's child
+        this.Grid.Attach(this.EditorWrapper._EditorNotebook, 0, 1, 1, 1);
+        this.EditorWrapper._EditorNotebook.SetScrollable(true);
         this.MakeButtonBar();
         this.MakePDFViewerWrapper(null);
     }
@@ -56,48 +51,47 @@ class Window {
     // By default, the desktop manager takes care of that, but we decideed to make
     // our own header bar
     public void SetHeaderBar(Gtk.Window window) {
-        var header_bar = new AppHeaderBar(); // Create the header bar
+        var HeaderBar = new AppHeaderBar(); // Create the header bar
 
         // TODO: make the menu bar with all the options (file, edit, etc.)
+        HeaderBar.AddMenuButon(Globals.Languages.ServeTrad("file"), false);
+        HeaderBar.AddButtonInMenu([Globals.Languages.ServeTrad("new"), Globals.Languages.ServeTrad("open"), Globals.Languages.ServeTrad("save"), Globals.Languages.ServeTrad("exit")], ["Ctrl+N", "Ctrl+O", "Ctrl+S", ""], [GetFunc("new"), GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
 
-        header_bar.AddMenuButon(Globals.lan.ServeTrad("file"), false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("new"), Globals.lan.ServeTrad("open"), Globals.lan.ServeTrad("save"), Globals.lan.ServeTrad("exit")], ["Ctrl+N", "Ctrl+O", "Ctrl+S", ""], [GetFunc("new"), GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
+        HeaderBar.AddMenuButon("LaTeX", false);
+        HeaderBar.AddButtonInMenu([Globals.Languages.ServeTrad("compile")], ["Ctrl+Shift+C"], [GetFunc("compile")], false, true);
 
-        header_bar.AddMenuButon("LaTeX", false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("compile")], ["Ctrl+Shift+C"], [GetFunc("compile")], false, true);
-
-        header_bar.AddMenuButon(Globals.lan.ServeTrad("tools"), false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("settings")], ["Ctrl+Shift+P"], [GetFunc("toogle_settings")], false, true);
+        HeaderBar.AddMenuButon(Globals.Languages.ServeTrad("tools"), false);
+        HeaderBar.AddButtonInMenu([Globals.Languages.ServeTrad("settings")], ["Ctrl+Shift+P"], [GetFunc("toogle_settings")], false, true);
 
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
-        header_bar.AddMenuButon(button_icon, false);
-        header_bar.AddButtonInMenu([Globals.lan.ServeTrad("about")], [""], [GetFunc("about")], false, false);
-        header_bar.SetWindowHeaderBar(window);
+        HeaderBar.AddMenuButon(button_icon, false);
+        HeaderBar.AddButtonInMenu([Globals.Languages.ServeTrad("about")], [""], [GetFunc("about")], false, false);
+        HeaderBar.SetWindowHeaderBar(window);
     }
 
-    async private void MakePDFViewerWrapper(string? pdf_path) { this.PDFViewer = await this.MakePDFViewer(pdf_path); }
+    async private void MakePDFViewerWrapper(string? pdfPath) { this.PDFViewer = await this.MakePDFViewer(pdfPath); }
 
     // To create the PDF viewer and returns the associated ScrolledWindow
-    async public Task<Gtk.ScrolledWindow> MakePDFViewer(string? pdf_path) {
+    async public Task<Gtk.ScrolledWindow> MakePDFViewer(string? pdfPath) {
         // IronPdf.PdfDocument pdf = new IronPdf.PdfDocument("./assets/pdf_test.pdf");
-        if (pdf_path is null) {
-            var scrolled = Gtk.ScrolledWindow.New();
-            this.grid.Attach(scrolled, 1, 1, 1, 1); // Spans 3 columns in the third row/column
-            return scrolled;
+        if (pdfPath is null) {
+            var Scrolled = Gtk.ScrolledWindow.New();
+            this.Grid.Attach(Scrolled, 1, 1, 1, 1); // Spans 3 columns in the third row/column
+            return Scrolled;
         }
-        IronPdf.PdfDocument pdf = new IronPdf.PdfDocument(pdf_path);
+        IronPdf.PdfDocument Pdf = new IronPdf.PdfDocument(pdfPath);
 
-        string path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) // If we are on a niche operating system for games
+        string Path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) // If we are on a niche operating system for games
                           ? Environment.ExpandEnvironmentVariables("%temp%/")
                           : "/tmp/";
 
         // Render the PDF as images in temp folder
-        await System.Threading.Tasks.Task.Run(() => { pdf.RasterizeToImageFiles($"{path}*.png", 2160, 3840, IronPdf.Imaging.ImageType.Png, 300); });
+        await System.Threading.Tasks.Task.Run(() => { Pdf.RasterizeToImageFiles($"{Path}*.png", 2160, 3840, IronPdf.Imaging.ImageType.Png, 300); });
 
-        var image_box = Gtk.Box.New(Gtk.Orientation.Vertical, 5);
+        var ImageBox = Gtk.Box.New(Gtk.Orientation.Vertical, 5);
 
-        for (int i = 1; i <= pdf.PageCount; ++i) {
+        for (int i = 1; i <= Pdf.PageCount; ++i) {
             // Usage of Gtk.Image widget
             // -------------------------
             // var imagePdf = Gtk.Image.NewFromFile(path + i + ".png");
@@ -108,239 +102,229 @@ class Window {
             // zoom.OnScaleChanged += (sender, args) => { imagePdf.PixelSize = (int)(500 * zoom.GetScaleDelta()); };
 
             // We add the gesture zoom to the box so that the entire box is rescaled when zooming, and not the image alone
-            // image_box.AddController(zoom);
+            // ImageBox.AddController(zoom);
 
             // Usage of Gtk.Picture widget
             // ---------------------------
             // Usage of Gtk.Picture widget instead of Gtk.Image
-            var imagePdf = Gtk.Picture.New();
+            var ImagePdf = Gtk.Picture.New();
             // for (int i = 1; i <= pdf.PageCount; ++i) {
-            imagePdf = Gtk.Picture.NewForFilename(path + i + ".png");
+            ImagePdf = Gtk.Picture.NewForFilename(Path + i + ".png");
             // Make the image fill the available space horizontally
-            imagePdf.SetHexpand(true);
-            imagePdf.SetContentFit(ContentFit.Fill);
+            ImagePdf.SetHexpand(true);
+            ImagePdf.SetContentFit(ContentFit.Fill);
             // IMPORTANT: this need to be on 'false' or else, the scrolled window will not work
-            imagePdf.SetCanShrink(false);
+            ImagePdf.SetCanShrink(false);
             // Keep the aspect ratio of the image, which avoid the image to be stretched when resizing the window
-            imagePdf.SetKeepAspectRatio(true);
+            ImagePdf.SetKeepAspectRatio(true);
 
             // And we add each image to the box
-            image_box.Append(imagePdf);
+            ImageBox.Append(ImagePdf);
         }
 
         // We remove whatever is in the grid before showing the PDF
-        if (Globals.settings.GetShowing()) {
-            var func = this.GetFunc("toogle_settings");
-            if (func is null)
+        if (Globals.Settings.GetShowing()) {
+            var Func = this.GetFunc("toogle_settings");
+            if (Func is null)
                 throw new System.ArgumentNullException("Function is null");
-            func(null, new EventArgs());
+            await Func(null, new EventArgs());
         }
 
         // We also clean the previous PDF file
-        this.grid.Remove(this.PDFViewer);
+        this.Grid.Remove(this.PDFViewer);
 
         // We put the PDF images into a scrollable element
-        var scrolledPdf = Gtk.ScrolledWindow.New();
-        scrolledPdf.SetHexpand(true);
-        scrolledPdf.SetVexpand(true);
-        scrolledPdf.SetChild(image_box);
-        this.grid.Attach(scrolledPdf, 1, 1, 1, 1); // Spans 3 columns in the third row/column
+        var ScrolledPdf = Gtk.ScrolledWindow.New();
+        ScrolledPdf.SetHexpand(true);
+        ScrolledPdf.SetVexpand(true);
+        ScrolledPdf.SetChild(ImageBox);
+        this.Grid.Attach(ScrolledPdf, 1, 1, 1, 1); // Spans 3 columns in the third row/column
 
-        return scrolledPdf;
+        return ScrolledPdf;
     }
 
     public void MakeButtonBar() {
-        this.button_bar.AddButton("new", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-new-symbolic")), GetFunc("new"));
+        this.ButtonBar.AddButton("new", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-new-symbolic")), GetFunc("new"));
         // We set the widget to the window so that it is possible to use the shortcut even if not focusing the editor view
-        this.button_bar.AddShortcut(this.window, "<Control>N", "newFileAction", GetFunc("new"), this.sender);
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control>N", "newFileAction", GetFunc("new"), this.Sender);
 
-        this.button_bar.AddButton("save", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-save-symbolic")), GetFunc("save"));
+        this.ButtonBar.AddButton("save", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-save-symbolic")), GetFunc("save"));
         // In this case, we set the widget to the editor view so that the shortcut is only available when focusing the editor view. (we don't want to save the file when we are not focusing the editor, right? (it can be slow))
         // EDIT : It actually depends, it works on new file, but seem to not work on opened file. Stricking to window for now.
-        this.button_bar.AddShortcut(this.editor.GetView(), "<Control>S", "saveAction", GetFunc("save"), this.sender);
+        this.ButtonBar.AddShortcut(this.EditorWrapper._EditorNotebook, "<Control>S", "saveAction", GetFunc("save"), this.Sender);
 
-        this.button_bar.AddButton("open", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-open-symbolic")), GetFunc("open"));
-        this.button_bar.AddShortcut(this.window, "<Control>O", "openAction", GetFunc("open"), this.sender);
+        this.ButtonBar.AddButton("open", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-open-symbolic")), GetFunc("open"));
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control>O", "openAction", GetFunc("open"), this.Sender);
 
-        this.button_bar.AddButton("close", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("window-close-symbolic")), GetFunc("close"));
-        this.button_bar.AddShortcut(this.window, "<Control>W", "closeAction", GetFunc("close"), this.sender);
+        this.ButtonBar.AddButton("close", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("window-close-symbolic")), GetFunc("close"));
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control>W", "closeAction", GetFunc("close"), this.Sender);
 
-        this.button_bar.AddButton("compile", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("media-playback-start-symbolic")), GetFunc("compile"));
-        this.button_bar.AddShortcut(this.window, "<Control><Shift>C", "compileAction", GetFunc("compile"), this.sender);
+        this.ButtonBar.AddButton("compile", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("media-playback-start-symbolic")), GetFunc("compile"));
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control><Shift>C", "compileAction", GetFunc("compile"), this.Sender);
 
-        this.button_bar.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));
-        this.button_bar.AddShortcut(this.window, "<Control><Shift>V", "vimAction", GetFunc("vim"), this.sender);
+        this.ButtonBar.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control><Shift>V", "vimAction", GetFunc("vim"), this.Sender);
 
-        this.button_bar.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
-        this.button_bar.AddShortcut(this.window, "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.sender);
+        this.ButtonBar.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.Sender);
 
-        this.button_bar.AddStatusBar();
-        this.grid.Attach(this.button_bar.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
+        this.ButtonBar.AddStatusBar();
+        this.Grid.Attach(this.ButtonBar.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
     }
 
     private Func<object?, EventArgs, System.Threading.Tasks.Task>? GetFunc(string function) {
-
-        var func_open = async (object? sender, EventArgs args) =>
-        {
-            var open_dialog = Gtk.FileDialog.New();
+        var FuncOpen = async (object? sender, EventArgs args) => {
+            var OpenDialog = Gtk.FileDialog.New();
             try {
-                open_dialog.SetTitle(Globals.lan.ServeTrad("choose_file"));
-                var open_task = open_dialog.OpenAsync(this.window);
-                await open_task;
-                if (open_task.Result is null)
+                OpenDialog.SetTitle(Globals.Languages.ServeTrad("choose_file"));
+                var OpenTask = OpenDialog.OpenAsync(this.MWindow);
+                await OpenTask;
+                if (OpenTask.Result is null)
                     throw new System.ArgumentNullException("Opening task is null.");
-                this.editor.OpenFile(open_task.Result.GetPath());
-                this.window.SetTitle($"{this.editor.GetPath()} - TeXSharp");
-                this.grid.Attach(this.editor.GetTextEntry(), 0, 2, 1, 1);
-                this.editor.GetTextEntry().Hide();
+                this.EditorWrapper.OpenFile(OpenTask.Result.GetPath());
+                this.MWindow.SetTitle($"{this.EditorWrapper.GetCurrentSourceEditor().GetPath()} - TeXSharp");
+                // this.Grid.Attach(this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry(), 0, 2, 1, 1);
+                this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry().Hide();
 
-                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("file_opened") + " " + open_task.Result.GetPath() + ".");
+                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("file_opened") + " " + OpenTask.Result.GetPath() + ".");
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
             } finally {
-                open_dialog.Dispose();
-                if (System.IO.File.Exists(this.editor.GetPath()[..^ 3] + "pdf"))
-                    this.PDFViewer = await this.MakePDFViewer(this.editor.GetPath()[..^ 3] + "pdf");
+                OpenDialog.Dispose();
+                if (System.IO.File.Exists(this.EditorWrapper.GetCurrentSourceEditor().GetPath()[..^ 3] + "pdf"))
+                    this.PDFViewer = await this.MakePDFViewer(this.EditorWrapper.GetCurrentSourceEditor().GetPath()[..^ 3] + "pdf");
             }
         };
 
-        var func_save = async (object? sender, EventArgs args) =>
-        {
-            var save_dialog = Gtk.FileDialog.New();
+        var FuncSave = async (object? sender, EventArgs args) => {
+            var SaveDialog = Gtk.FileDialog.New();
             try {
-                if (!this.editor.GetFileExists()) {
-                    save_dialog.SetTitle(Globals.lan.ServeTrad("save_file"));
-                    var save_task = save_dialog.SaveAsync(this.window);
-                    await save_task;
-                    if (save_task.Result is null)
+                if (!this.EditorWrapper.GetCurrentSourceEditor().GetFileExists()) {
+                    SaveDialog.SetTitle(Globals.Languages.ServeTrad("save_file"));
+                    var SaveTask = SaveDialog.SaveAsync(this.MWindow);
+                    await SaveTask;
+                    if (SaveTask.Result is null)
                         throw new System.ArgumentNullException("Saving task is null.");
-                    this.editor.SaveFile(save_task.Result.GetPath());
+                    this.EditorWrapper.SaveFile(SaveTask.Result.GetPath());
                 } else {
-                    this.editor.SaveFile(this.editor.GetPath());
+                    this.EditorWrapper.SaveFile(this.EditorWrapper.GetCurrentSourceEditor().GetPath());
                 }
-                this.window.SetTitle($"{this.editor.GetPath()} - TeXSharp");
-                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("file_saved") + " " + this.editor.editors[this.editor.GetCurrentEditorIndex()].GetPath() + ".");
+                this.MWindow.SetTitle($"{this.EditorWrapper.GetCurrentSourceEditor().GetPath()} - TeXSharp");
+                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("file_saved") + " " + this.EditorWrapper.GetCurrentSourceEditor().GetPath() + ".");
             } catch (Exception e) {
-                Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
+                Console.WriteLine($"WARNING: Dismissed by user, {e.Message} \n" + e.StackTrace);
             } finally {
-                save_dialog.Dispose();
+                SaveDialog.Dispose();
             }
         };
 
-        var func_newFile = async (object? sender, EventArgs args) =>
-        {
-            this.editor.NewFile();
+        var FuncNewFile = async (object? sender, EventArgs args) => {
+            this.EditorWrapper.NewFile();
             // The only way to add the TextEntry to the editor is here. Otherwise, SourceEditor class can't access the grid
-            this.grid.Attach(this.editor.GetTextEntry(), 0, 2, 1, 1);
-            this.editor.GetTextEntry().Hide();
-            this.window.SetTitle($"{Globals.lan.ServeTrad("new_file")} - TeXSharp");
-            this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("new_file") + " " + Globals.lan.ServeTrad("created") + ".");
+            // this.Grid.Attach(this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry(), 0, 2, 1, 1);
+            this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry().Hide();
+            this.MWindow.SetTitle($"{Globals.Languages.ServeTrad("new_file")} - TeXSharp");
+            this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("new_file") + " " + Globals.Languages.ServeTrad("created") + ".");
         };
 
-        var func_close = async (object? sender, EventArgs args) =>
-        {
-            this.editor.CloseFile();
+        var FuncClose = async (object? sender, EventArgs args) => {
+            this.EditorWrapper.CloseFile();
         };
 
-        var func_quit = async (object? sender, EventArgs args) =>
-        {
-            this.window.Destroy();
+        var FuncQuit = async (object? sender, EventArgs args) => {
+            this.MWindow.Destroy();
         };
 
-        var func_about = async (object? sender, EventArgs args) =>
-        {
-            var dialog = new TAboutDialog("TeXSharp");
-            dialog.Application = (Gtk.Application)this.sender; // CS0030: Impossible de convertir le type 'Gtk.Button' en 'Gtk.Application'
-            dialog.Show();
+        var FuncAbout = async (object? sender, EventArgs args) => {
+            var Dialog = new TAboutDialog("TeXSharp");
+            Dialog.Application = (Gtk.Application)this.Sender; // CS0030: Impossible de convertir le type 'Gtk.Button' en 'Gtk.Application'
+            Dialog.Show();
         };
 
-        var func_compile = async (object? sender, EventArgs args) =>
-        {
-            await func_save(sender, args);
-            if (this.editor.GetFileExists()) {
-                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_started") + "...");
-                var process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.editor.GetPath(), 50000);
-                if (process.ExitCode == 0)
-                    this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_finished") + ".");
+        var FuncCompile = async (object? sender, EventArgs args) => {
+            await FuncSave(sender, args);
+            if (this.EditorWrapper.GetCurrentSourceEditor().GetFileExists()) {
+                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("compilation_started") + "...");
+                var Process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.EditorWrapper.GetCurrentSourceEditor().GetPath(), 50000);
+                if (Process.ExitCode == 0)
+                    this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("compilation_finished") + ".");
                 else
-                    this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("compilation_finished") + " " + Globals.lan.ServeTrad("with_errors") + ".");
-                this.PDFViewer = await this.MakePDFViewer(this.editor.GetPath()[..^ 3] + "pdf");
+                    this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("compilation_finished") + " " + Globals.Languages.ServeTrad("with_errors") + ".");
+                this.PDFViewer = await this.MakePDFViewer(this.EditorWrapper.GetCurrentSourceEditor().GetPath()[..^ 3] + "pdf");
             } else {
-                this.button_bar._Status_bar.SetLabel(Globals.lan.ServeTrad("not_saved_cannot_compile"));
+                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("not_saved_cannot_compile"));
             }
         };
 
-        var func_vim = async (object? sender, EventArgs args) =>
-        {
+        var FuncVim = async (object? sender, EventArgs args) => {
             // If the VIM mode is enabled (1), we disable it
-            if (this.editor.GetVIMmodeEnabled()) {
-                this.editor.GetVIMeventControllerKey().SetPropagationPhase(Gtk.PropagationPhase.None);
-                this.editor.GetView().RemoveController(this.editor.GetVIMeventControllerKey());
-                this.editor.GetTextEntry().Hide();
-                this.editor.SetVIMmodeEnabled(false);
-                this.button_bar._Status_bar.SetLabel("VIM Mode " + Globals.lan.ServeTrad("desactivated") + ".");
+            if (this.EditorWrapper.GetCurrentSourceEditor().GetVIMmodeEnabled()) {
+                this.EditorWrapper.GetCurrentSourceEditor().GetVIMeventControllerKey().SetPropagationPhase(Gtk.PropagationPhase.None);
+                this.EditorWrapper.GetCurrentSourceEditor().GetView().RemoveController(this.EditorWrapper.GetCurrentSourceEditor().GetVIMeventControllerKey());
+                this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry().Hide();
+                this.EditorWrapper.GetCurrentSourceEditor().SetVIMmodeEnabled(false);
+                this.ButtonBar._StatusBar.SetLabel("VIM Mode " + Globals.Languages.ServeTrad("desactivated") + ".");
             } else {
                 // If the VIM mode is disabled (0), we enable it
-                this.editor.GetTextEntry().Show();
-                this.editor.GetTextEntry().SetPlaceholderText("Vim command bar");
+                this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry().Show();
+                this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry().SetPlaceholderText("Vim command bar");
 
                 // Set the IM context to the event controller key
-                this.editor.GetVIMeventControllerKey().SetImContext(this.editor.GetVIMmode());
-                this.editor.GetVIMeventControllerKey().SetPropagationPhase(Gtk.PropagationPhase.Capture);
+                this.EditorWrapper.GetCurrentSourceEditor().GetVIMeventControllerKey().SetImContext(this.EditorWrapper.GetCurrentSourceEditor().GetVIMmode());
+                this.EditorWrapper.GetCurrentSourceEditor().GetVIMeventControllerKey().SetPropagationPhase(Gtk.PropagationPhase.Capture);
                 // Add the event controller key to the view
                 // And the vim input module context to the view (editor)
-                this.editor.GetView().AddController(this.editor.GetVIMeventControllerKey());
-                this.editor.GetVIMmode().SetClientWidget(this.editor.GetView());
+                this.EditorWrapper.GetCurrentSourceEditor().GetView().AddController(this.EditorWrapper.GetCurrentSourceEditor().GetVIMeventControllerKey());
+                this.EditorWrapper.GetCurrentSourceEditor().GetVIMmode().SetClientWidget(this.EditorWrapper.GetCurrentSourceEditor().GetView());
 
                 // Bind the command bar text to the text entry so that when we type ":" in the editor it will show up in the text entry at the bottom
-                this.editor.GetVIMmode().BindProperty("command-bar-text", this.editor.GetTextEntry(), "text", 0);
-                this.editor.GetVIMmode().BindProperty("command-text", this.editor.GetTextEntry(), "text", 0);
+                this.EditorWrapper.GetCurrentSourceEditor().GetVIMmode().BindProperty("command-bar-text", this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry(), "text", 0);
+                this.EditorWrapper.GetCurrentSourceEditor().GetVIMmode().BindProperty("command-text", this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry(), "text", 0);
 
-                this.editor.SetVIMmodeEnabled(true);
-                this.button_bar._Status_bar.SetLabel("VIM Mode " + Globals.lan.ServeTrad("activated") + ".");
+                this.EditorWrapper.GetCurrentSourceEditor().SetVIMmodeEnabled(true);
+                this.ButtonBar._StatusBar.SetLabel("VIM Mode " + Globals.Languages.ServeTrad("activated") + ".");
             }
         };
 
-        var func_toogle_settings = async (object? sender, EventArgs args) =>
-        {
-            if (!Globals.settings.GetShowing()) {
-                Globals.settings.OnToggle(this.editor, this.button_bar._Status_bar);
-                this.grid.Remove(this.PDFViewer);
-                this.grid.Attach(Globals.settings.GetScrolledWindow(), 1, 1, 1, 1);
-                // this.grid.AttachNextTo(this.settings.GetScrolledWindow(), this.TextEditor, Gtk.PositionType.Right, 1, 1);
-                Globals.settings.SetShowing(true);
+        var FuncToggleSettings = async (object? sender, EventArgs args) => {
+            if (!Globals.Settings.GetShowing()) {
+                Globals.Settings.OnToggle(this.EditorWrapper, this.ButtonBar._StatusBar);
+                this.Grid.Remove(this.PDFViewer);
+                this.Grid.Attach(Globals.Settings.GetScrolledWindow(), 1, 1, 1, 1);
+                // this.Grid.AttachNextTo(this.settings.GetScrolledWindow(), this.TextEditor, Gtk.PositionType.Right, 1, 1);
+                Globals.Settings.SetShowing(true);
             } else {
-                this.grid.Remove(Globals.settings.GetScrolledWindow());
-                this.grid.Attach(this.PDFViewer, 1, 1, 1, 1); // Spans 3 columns in the third row/column
-                Globals.settings.SetShowing(false);
+                this.Grid.Remove(Globals.Settings.GetScrolledWindow());
+                this.Grid.Attach(this.PDFViewer, 1, 1, 1, 1); // Spans 3 columns in the third row/column
+                Globals.Settings.SetShowing(false);
             }
         };
 
         switch (function) {
         case "new":
-            return func_newFile;
+            return FuncNewFile;
         case "open":
-            return func_open;
+            return FuncOpen;
         case "save":
-            return func_save;
+            return FuncSave;
         case "close":
-            return func_close;
+            return FuncClose;
         case "compile":
-            return func_compile;
+            return FuncCompile;
         case "quit":
-            return func_quit;
+            return FuncQuit;
         case "about":
-            return func_about;
+            return FuncAbout;
         case "vim":
-            return func_vim;
+            return FuncVim;
         case "toogle_settings":
-            return func_toogle_settings;
+            return FuncToggleSettings;
         default:
             return null;
         }
     }
 
     // Manuals getters
-    public Gtk.Window GetWindow() { return this.window; }
-    public Gtk.Grid GetGrid() { return this.grid; }
+    public Gtk.Window GetWindow() { return this.MWindow; }
+    public Gtk.Grid GetGrid() { return this.Grid; }
 }

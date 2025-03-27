@@ -12,8 +12,7 @@ public class WebSocketClient : IDisposable {
     private readonly Uri serverUri;
     private Task receiveTask;
     private bool disposed;
-    private const int DisconnectTimeoutMs =
-        5000; // 5 second timeout for disconnection
+    private const int DisconnectTimeoutMs = 5000; // 5 second timeout for disconnection
 
     public event EventHandler<string> MessageReceived;
     public event EventHandler<Exception> ErrorOccurred;

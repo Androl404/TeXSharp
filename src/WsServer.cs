@@ -15,8 +15,9 @@ public class WebSocketServer {
     private readonly CancellationTokenSource serverCancellation;
     private readonly ConcurrentDictionary<Guid, WebSocket> clients;
     private readonly ConcurrentDictionary<Guid, string> clientStates;
+    private readonly GtkSource.Buffer editor_buffer;
 
-    public WebSocketServer(string ip = "*", int port = 6969) {
+    public WebSocketServer(int port, GtkSource.Buffer editor_buffer, string ip = "*") {
         this.ip = ip;
         this.port = port;
         this.listener = new HttpListener();
@@ -24,6 +25,7 @@ public class WebSocketServer {
         this.serverCancellation = new CancellationTokenSource();
         this.clients = new ConcurrentDictionary<Guid, WebSocket>();
         this.clientStates = new ConcurrentDictionary<Guid, string>();
+        this.editor_buffer = editor_buffer;
     }
 
     public async Task StartAsync() {
@@ -54,6 +56,7 @@ public class WebSocketServer {
 
             if (clients.TryAdd(clientId, webSocket)) {
                 Console.WriteLine($"Client {clientId} connected");
+                await BroadcastMessageToClient(clientId, "full:\n" + this.editor_buffer.Text);
                 await HandleClientSession(clientId, webSocket);
             }
         } catch (Exception ex) {
@@ -183,6 +186,25 @@ public class WebSocketServer {
         // Clean up any failed clients
         foreach (var clientId in failedClients) {
             await HandleClientDisconnection(clientId, false);
+        }
+    }
+
+    public async Task BroadcastMessageToClient(Guid clientId, string message) {
+        var buffer = Encoding.UTF8.GetBytes(message);
+        var failedClients = new List<Guid>();
+
+        var client_ws = clients[clientId];
+        try {
+            if (client_ws.State == WebSocketState.Open) {
+                await client_ws.SendAsync(new ArraySegment<byte>(buffer),
+                                          WebSocketMessageType.Text,
+                                          true,
+                                          serverCancellation.Token);
+            } else {
+                failedClients.Add(clientId);
+            }
+        } catch (WebSocketException) {
+            failedClients.Add(clientId);
         }
     }
 }
