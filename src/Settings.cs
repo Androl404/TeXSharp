@@ -50,7 +50,7 @@ public class Settings {
             this.SaveSettings();
         } else {
             string path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) // If we are on a niche operating system for games
-                              ? Environment.ExpandEnvironmentVariables("%appdata%") + "/Local/TeXSharp/config.json"
+                              ? Environment.ExpandEnvironmentVariables("%appdata%") + "/TeXSharp/config.json"
                               : Environment.GetEnvironmentVariable("HOME") + "/.config/texsharp/config.json";
 
             this.SettingsValues = JsonSerializer.Deserialize<SettingsValues>(System.IO.File.ReadAllText(path)) ?? new SettingsValues();
@@ -164,7 +164,7 @@ public class Settings {
 
     private bool SettingExists() {
         if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) { // If we are on a niche operating system for video games
-            return System.IO.File.Exists(Environment.ExpandEnvironmentVariables("%appdata%") + "/Local/TeXSharp/config.json");
+            return System.IO.File.Exists(Environment.ExpandEnvironmentVariables("%appdata%") + "/TeXSharp/config.json");
         } else { // Unix-based OS
             return System.IO.File.Exists(Environment.GetEnvironmentVariable("HOME") + "/.config/texsharp/config.json");
         }
@@ -175,8 +175,8 @@ public class Settings {
         string Path = "";
         if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) { // If we are on a niche operating system for games
             string AppData = Environment.ExpandEnvironmentVariables("%appdata%");
-            System.IO.Directory.CreateDirectory(AppData + "/Local/TeXSharp/");
-            Path = AppData + "/Local/TeXSharp/config.json";
+            System.IO.Directory.CreateDirectory(AppData + "/TeXSharp/");
+            Path = AppData + "/TeXSharp/config.json";
         } else { // Unix-based OS
             string HomeUser = Environment.GetEnvironmentVariable("HOME") ?? "/home/";
             System.IO.Directory.CreateDirectory(HomeUser + "/.config");
