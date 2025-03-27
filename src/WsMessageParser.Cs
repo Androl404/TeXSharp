@@ -26,10 +26,10 @@ public class WsMessageParser {
     /// <returns>A parsed message result</returns>
     public ParsedMessageResult ParseMessage(string message) {
         // Trim the message to remove any leading/trailing whitespace
-        message = message.Trim();
+        // message = message.Trim();
 
         // Check for start of a full message
-        if (message.StartsWith("full:") && message.Contains(":START")) {
+        if (message.StartsWith("full:") && message.Contains(":START\n")) {
             // Extract client GUID
             string clientGuid = ExtractClientGuid(message);
 
@@ -37,6 +37,7 @@ public class WsMessageParser {
             ResetParsingState();
             _currentState.IsReceivingMessage = true;
             _currentState.ClientGuid = clientGuid;
+            _currentState.CurrentMessageContent.AppendLine(message.Replace("full:" + _currentState.ClientGuid + ":START\n", ""));
 
             return new ParsedMessageResult { Type = MessageType.FullMessageStart, ClientGuid = clientGuid };
         }
@@ -44,9 +45,9 @@ public class WsMessageParser {
         // Check if we're currently receiving a message
         if (_currentState.IsReceivingMessage) {
             // Check for stop marker
-            if (message.Contains("full:" + _currentState.ClientGuid + ":STOP")) {
+            if (message.Contains("\nfull:" + _currentState.ClientGuid + ":STOP\n")) {
                 // Remove the stop marker from the message
-                string finalContent = message.Replace("full:" + _currentState.ClientGuid + ":STOP", "").Trim();
+                string finalContent = message.Replace("\n\nfull:" + _currentState.ClientGuid + ":STOP\n", "");
 
                 // Append final content if exists
                 if (!string.IsNullOrEmpty(finalContent)) {
@@ -57,7 +58,7 @@ public class WsMessageParser {
                 _currentState.IsFullMessageComplete = true;
 
                 // Return the complete message
-                return new ParsedMessageResult { Type = MessageType.FullMessageComplete, ClientGuid = _currentState.ClientGuid, Content = _currentState.CurrentMessageContent.ToString().Trim() };
+                return new ParsedMessageResult { Type = MessageType.FullMessageComplete, ClientGuid = _currentState.ClientGuid, Content = _currentState.CurrentMessageContent.ToString() };
             } else {
                 // Append the current message part
                 _currentState.CurrentMessageContent.AppendLine(message);

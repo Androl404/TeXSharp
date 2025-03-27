@@ -259,10 +259,9 @@ public class SourceEditor {
                 Console.WriteLine("Disconnected from server");
             };
             this.WsClient.MessageReceived += (s, message) => {
-                Console.WriteLine("------------------------------------------------\n" + message);
                 var final_message = parser.ParseMessage(message);
                 if (final_message.Type == WsMessageParser.MessageType.FullMessageComplete) {
-                    Console.WriteLine($"Received: {final_message.Content}");
+                    // Console.WriteLine($"Received: {final_message.Content}");
                     this.Buffer.Text = final_message.Content;
                 }
             };
