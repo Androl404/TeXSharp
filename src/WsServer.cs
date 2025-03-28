@@ -17,6 +17,7 @@ public class WebSocketServer {
     private readonly ConcurrentDictionary<Guid, WebSocket> clients;
     private readonly ConcurrentDictionary<Guid, string> clientStates;
     private readonly GtkSource.Buffer editor_buffer;
+    public event EventHandler<string> MessageReceived;
     public bool _Failed = false;
 
     public WebSocketServer(int port, GtkSource.Buffer editor_buffer, string ip = "*") {
@@ -108,6 +109,7 @@ public class WebSocketServer {
 
     private async Task HandleMessage(Guid senderId, string message) {
         Console.WriteLine($"Received from {senderId}: {message}");
+        MessageReceived?.Invoke(this, message);
 
         // Example: Broadcast message to all other clients
         foreach (var client in clients) {

@@ -233,6 +233,9 @@ public class SourceEditor {
             statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_start"));
             this.StartSync();
             await this.WsServer.StartAsync(statusBar);
+            this.WsServer.MessageReceived += (s, message) => {
+                this.ReceivedMessage(message);
+            };
             if (this.WsServer._Failed) {
                 statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start"));
                 this.WsServer = null;
@@ -275,27 +278,7 @@ public class SourceEditor {
                 Console.WriteLine("Disconnected from server");
             };
             this.WsClient.MessageReceived += (s, message) => {
-                var final_message = Parser.ParseMessage(message);
-                if (final_message.Type == WsMessageParser.MessageType.FullMessageComplete) {
-                    // Console.WriteLine($"Received: {final_message.Content}");
-                    this.Buffer.Text = final_message.Content;
-                } else if (final_message.Type == WsMessageParser.MessageType.RelativeMessageComplete) {
-                    var MessageContent = final_message.Content.Split(':');
-                    if (MessageContent[0] == "insertion") {
-                        this.TakeModificationInAccount = false;
-                        if (int.Parse(MessageContent[1]) > this.Buffer.Text.Length)
-                            this.Buffer.Text += MessageContent[2][0].ToString();
-                        else
-                            this.Buffer.Text = this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2][0].ToString());
-                    }
-                    else if (MessageContent[0] == "deletion") {
-                        this.TakeModificationInAccount = false;
-                        if (int.Parse(MessageContent[1]) == this.Buffer.Text.Length)
-                            this.Buffer.Text = this.Buffer.Text[..^1];
-                        else
-                            this.Buffer.Text = this.Buffer.Text.Remove(int.Parse(MessageContent[1]), 1);
-                    }
-                }
+                this.ReceivedMessage(message);
             };
             this.WsClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
             statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
@@ -306,6 +289,30 @@ public class SourceEditor {
             this.WsClient.Dispose();
             this.WsClient = null;
             this.StopSync();
+        }
+    }
+
+    private void ReceivedMessage(string message) {
+        var final_message = Parser.ParseMessage(message);
+        if (final_message.Type == WsMessageParser.MessageType.FullMessageComplete) {
+            // Console.WriteLine($"Received: {final_message.Content}");
+            this.Buffer.Text = final_message.Content;
+        } else if (final_message.Type == WsMessageParser.MessageType.RelativeMessageComplete) {
+            var MessageContent = final_message.Content.Split(':');
+            if (MessageContent[0] == "insertion") {
+                this.TakeModificationInAccount = false;
+                if (int.Parse(MessageContent[1]) > this.Buffer.Text.Length)
+                    this.Buffer.Text += MessageContent[2][0].ToString();
+                else
+                    this.Buffer.Text = this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2][0].ToString());
+            }
+            else if (MessageContent[0] == "deletion") {
+                this.TakeModificationInAccount = false;
+                if (int.Parse(MessageContent[1]) == this.Buffer.Text.Length)
+                    this.Buffer.Text = this.Buffer.Text[..^1];
+                else
+                    this.Buffer.Text = this.Buffer.Text.Remove(int.Parse(MessageContent[1]), 1);
+            }
         }
     }
 
