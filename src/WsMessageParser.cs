@@ -46,11 +46,11 @@ public class WsMessageParser {
             ResetParsingState();
             _currentState.IsReceivingMessage = true;
             _currentState.ClientGuid = clientGuid;
-            _currentState.CurrentMessageContent.AppendLine(message.Replace("full:" + _currentState.ClientGuid + ":START\n", ""));
+            _currentState.CurrentMessageContent.Append(message.Replace("full:" + _currentState.ClientGuid + ":START\n", ""));
 
             if (message.Contains("\nfull:" + _currentState.ClientGuid + ":STOP\n")) {
                 // Remove the stop marker from the message
-                string finalContent = message.Replace("\n\nfull:" + _currentState.ClientGuid + ":STOP\n", "");
+                _currentState.CurrentMessageContent.Replace("\nfull:" + _currentState.ClientGuid + ":STOP\n", "");
                 return new ParsedMessageResult { Type = MessageType.FullMessageComplete, ClientGuid = _currentState.ClientGuid, Content = _currentState.CurrentMessageContent.ToString() };
             } else {
                 return new ParsedMessageResult { Type = MessageType.FullMessageStart, ClientGuid = clientGuid };
