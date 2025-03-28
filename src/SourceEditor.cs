@@ -296,18 +296,18 @@ public class SourceEditor {
         var final_message = Parser.ParseMessage(message);
         if (final_message.Type == WsMessageParser.MessageType.FullMessageComplete) {
             // Console.WriteLine($"Received: {final_message.Content}");
+            this.TakeModificationInAccount = false;
             this.Buffer.Text = final_message.Content;
         } else if (final_message.Type == WsMessageParser.MessageType.RelativeMessageComplete) {
+            this.TakeModificationInAccount = false;
             var MessageContent = final_message.Content.Split(':');
             if (MessageContent[0] == "insertion") {
-                this.TakeModificationInAccount = false;
                 if (int.Parse(MessageContent[1]) > this.Buffer.Text.Length)
                     this.Buffer.Text += MessageContent[2][0].ToString();
                 else
                     this.Buffer.Text = this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2][0].ToString());
             }
             else if (MessageContent[0] == "deletion") {
-                this.TakeModificationInAccount = false;
                 if (int.Parse(MessageContent[1]) == this.Buffer.Text.Length)
                     this.Buffer.Text = this.Buffer.Text[..^1];
                 else
