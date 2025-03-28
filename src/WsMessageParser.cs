@@ -25,8 +25,17 @@ public class WsMessageParser {
     /// <param name="message">The incoming message string</param>
     /// <returns>A parsed message result</returns>
     public ParsedMessageResult ParseMessage(string message) {
-        // Trim the message to remove any leading/trailing whitespace
-        // message = message.Trim();
+        // Check for a relative message
+        if (message.StartsWith("relative:START\n") && message.EndsWith("\nrelative:STOP\n")) {
+
+            // Reset state and start a new message
+            ResetParsingState();
+            _currentState.IsReceivingMessage = true;
+            _currentState.ClientGuid = null;
+            _currentState.CurrentMessageContent.AppendLine(message.Replace("relative:START\n", "").Replace("\nrelative:STOP\n", ""));
+
+            return new ParsedMessageResult { Type = MessageType.RelativeMessageComplete, ClientGuid = _currentState.ClientGuid, Content = _currentState.CurrentMessageContent.ToString() };
+        }
 
         // Check for start of a full message
         if (message.StartsWith("full:") && message.Contains(":START\n")) {
@@ -39,7 +48,13 @@ public class WsMessageParser {
             _currentState.ClientGuid = clientGuid;
             _currentState.CurrentMessageContent.AppendLine(message.Replace("full:" + _currentState.ClientGuid + ":START\n", ""));
 
-            return new ParsedMessageResult { Type = MessageType.FullMessageStart, ClientGuid = clientGuid };
+            if (message.Contains("\nfull:" + _currentState.ClientGuid + ":STOP\n")) {
+                // Remove the stop marker from the message
+                string finalContent = message.Replace("\n\nfull:" + _currentState.ClientGuid + ":STOP\n", "");
+                return new ParsedMessageResult { Type = MessageType.FullMessageComplete, ClientGuid = _currentState.ClientGuid, Content = _currentState.CurrentMessageContent.ToString() };
+            } else {
+                return new ParsedMessageResult { Type = MessageType.FullMessageStart, ClientGuid = clientGuid };
+            }
         }
 
         // Check if we're currently receiving a message
@@ -101,6 +116,7 @@ public class WsMessageParser {
         FullMessageStart,    // First part of a full message
         FullMessagePartial,  // Intermediate part of a full message
         FullMessageComplete, // Final part of a full message
+        RelativeMessageComplete, // Full part of a relative message
         Unrecognized         // Message not related to full message parsing
     }
 }

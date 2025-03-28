@@ -146,7 +146,9 @@ public class SourceEditor {
 
     private WSocket.WebSocketClient? WsClient = null;
     private WSocket.WebSocketServer? WsServer = null;
-    private WsMessageParser parser = new WsMessageParser();
+    private WsMessageParser Parser = new WsMessageParser();
+    private bool SyncChanges = false;
+    private string? OldBufferText = null;
 
     public SourceEditor() {
         // Second, we create the buffer and the view
@@ -172,6 +174,11 @@ public class SourceEditor {
         this.Box.Append(this.TextEntry);
         this.TextEntry.Hide();
         this.NewFile();
+        // For collaborative editing
+        this.Buffer.OnChanged += (buffer, args) => {
+            this.GetDiffs();
+            this.OldBufferText = this.Buffer.Text;
+        };
     }
 
     public void NewFile() {
@@ -219,12 +226,15 @@ public class SourceEditor {
         this.WsServer = new WSocket.WebSocketServer(port, this.GetBuffer());
         try {
             statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_start"));
+            this.StartSync();
             await this.WsServer.StartAsync(statusBar);
-            if (this.WsServer._Failed)
+            if (this.WsServer._Failed) {
                 statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start"));
                 this.WsServer = null;
+            }
         } catch (Exception e) {
             this.WsServer = null;
+            this.StopSync();
         }
     }
 
@@ -235,6 +245,7 @@ public class SourceEditor {
         }
         await this.WsServer.StopAsync();
         this.WsServer = null;
+        this.StopSync();
         statusBar.SetLabel(Globals.Languages.ServeTrad("server_stoped"));
     }
 
@@ -259,19 +270,24 @@ public class SourceEditor {
                 Console.WriteLine("Disconnected from server");
             };
             this.WsClient.MessageReceived += (s, message) => {
-                var final_message = parser.ParseMessage(message);
+                var final_message = Parser.ParseMessage(message);
                 if (final_message.Type == WsMessageParser.MessageType.FullMessageComplete) {
                     // Console.WriteLine($"Received: {final_message.Content}");
                     this.Buffer.Text = final_message.Content;
+                } else if (final_message.Type == WsMessageParser.MessageType.RelativeMessageComplete) {
+                    var MessageContent = final_message.Content.Split(':');
+                    this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2]);
                 }
             };
             this.WsClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
             statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
             await this.WsClient.ConnectAsync();
+            this.StartSync();
         } catch (Exception e) {
             statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_not_connect") + " " + e.Message);
             this.WsClient.Dispose();
             this.WsClient = null;
+            this.StopSync();
         }
     }
 
@@ -283,7 +299,63 @@ public class SourceEditor {
         await this.WsClient.DisconnectAsync();
         this.WsClient.Dispose();
         this.WsClient = null;
+        this.StopSync();
         statusBar.SetLabel(Globals.Languages.ServeTrad("client_disconnected"));
+    }
+
+    async private void GetDiffs() {
+        if (!this.SyncChanges) return;
+        string? Text = this.Buffer.Text;
+        bool? Insertion = null;
+        int Length = 0;
+        string Diff = string.Empty;
+        if (Text.Length + 1 == this.OldBufferText.Length) {
+            // Insertion
+            Insertion = true;
+            Length = this.OldBufferText.Length;
+        } else if (Text.Length - 1 == this.OldBufferText.Length) {
+            // Deletion
+            Insertion = false;
+            Length = Text.Length;
+        }
+        else return; // Strings are equals, something wrong is going on...
+        // We should send a full copy of the file then
+        for (int i = 0; i < Length; i++) {
+            if (Text[i] != this.OldBufferText[i]) {
+                if ((bool)Insertion) {
+                    // Console.WriteLine($"Insertion at {i} with caracter {Text[i]}");
+                    Diff = $"insertion:{i}:{Text[i]}";
+                } else {
+                    // Console.WriteLine($"Deletion at {i} with caracter {this.OldBufferText[i]}");
+                    Diff = $"deletion:{i}:{this.OldBufferText[i]}";
+                }
+            }
+        }
+        if ((bool)Insertion) {
+            // Console.WriteLine($"Insertion at {Text.Length} with caracter {Text[Text.Length - 1]}");
+            Diff = $"insertion:{Text.Length}:{Text[Text.Length - 1]}";
+         } else {
+            // Console.WriteLine($"Deletion at {this.OldBufferText.Length} with caracter {this.OldBufferText[this.OldBufferText.Length - 1]}");
+            Diff = $"deletion:{this.OldBufferText.Length}:{this.OldBufferText[this.OldBufferText.Length - 1]}";
+        }
+        string message = $"relative:START\n{Diff}\nrelative:STOP\n";
+        if (Diff != string.Empty) {
+            if (!(this.WsServer is null)) { // The server is active
+                await this.WsServer.BroadcastMessage(message);
+            } else if (!(this.WsClient is null)) { // The client is active
+                await this.WsClient.SendMessageAsync(message);
+            }
+        }
+    }
+
+    private void StartSync() {
+        this.SyncChanges = true;
+        this.OldBufferText = this.Buffer.Text;
+    }
+
+    private void StopSync() {
+        this.SyncChanges = false;
+        this.OldBufferText = null;
     }
 
     // Manuals Getters and setters
