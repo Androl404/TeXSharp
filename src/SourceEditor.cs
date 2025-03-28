@@ -276,7 +276,10 @@ public class SourceEditor {
                     this.Buffer.Text = final_message.Content;
                 } else if (final_message.Type == WsMessageParser.MessageType.RelativeMessageComplete) {
                     var MessageContent = final_message.Content.Split(':');
-                    this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2]);
+                    if (MessageContent[0] == "insertion")
+                        this.Buffer.Text = this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2][0].ToString());
+                    else if (MessageContent[0] == "deletion")
+                        this.Buffer.Text = this.Buffer.Text.Remove(int.Parse(MessageContent[1]), 1);
                 }
             };
             this.WsClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
@@ -309,11 +312,11 @@ public class SourceEditor {
         bool? Insertion = null;
         int Length = 0;
         string Diff = string.Empty;
-        if (Text.Length + 1 == this.OldBufferText.Length) {
+        if (Text.Length - 1 == this.OldBufferText.Length) {
             // Insertion
             Insertion = true;
             Length = this.OldBufferText.Length;
-        } else if (Text.Length - 1 == this.OldBufferText.Length) {
+        } else if (Text.Length + 1 == this.OldBufferText.Length) {
             // Deletion
             Insertion = false;
             Length = Text.Length;
@@ -325,19 +328,24 @@ public class SourceEditor {
                 if ((bool)Insertion) {
                     // Console.WriteLine($"Insertion at {i} with caracter {Text[i]}");
                     Diff = $"insertion:{i}:{Text[i]}";
+                    break;
                 } else {
                     // Console.WriteLine($"Deletion at {i} with caracter {this.OldBufferText[i]}");
                     Diff = $"deletion:{i}:{this.OldBufferText[i]}";
+                    break;
                 }
             }
         }
-        if ((bool)Insertion) {
-            // Console.WriteLine($"Insertion at {Text.Length} with caracter {Text[Text.Length - 1]}");
-            Diff = $"insertion:{Text.Length}:{Text[Text.Length - 1]}";
-         } else {
-            // Console.WriteLine($"Deletion at {this.OldBufferText.Length} with caracter {this.OldBufferText[this.OldBufferText.Length - 1]}");
-            Diff = $"deletion:{this.OldBufferText.Length}:{this.OldBufferText[this.OldBufferText.Length - 1]}";
+        if (Diff == string.Empty) {
+            if ((bool)Insertion) {
+                // Console.WriteLine($"Insertion at {Text.Length} with caracter {Text[Text.Length - 1]}");
+                Diff = $"insertion:{Text.Length}:{Text[Text.Length - 1]}";
+            } else {
+                // Console.WriteLine($"Deletion at {this.OldBufferText.Length} with caracter {this.OldBufferText[this.OldBufferText.Length - 1]}");
+                Diff = $"deletion:{this.OldBufferText.Length}:{this.OldBufferText[this.OldBufferText.Length - 1]}";
+            }
         }
+        Console.WriteLine(Diff);
         string message = $"relative:START\n{Diff}\nrelative:STOP\n";
         if (Diff != string.Empty) {
             if (!(this.WsServer is null)) { // The server is active
