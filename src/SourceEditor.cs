@@ -232,10 +232,10 @@ public class SourceEditor {
         try {
             statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_start"));
             this.StartSync();
-            await this.WsServer.StartAsync(statusBar);
             this.WsServer.MessageReceived += (s, message) => {
                 this.ReceivedMessage(message);
             };
+            await this.WsServer.StartAsync(statusBar);
             if (this.WsServer._Failed) {
                 statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start"));
                 this.WsServer = null;
