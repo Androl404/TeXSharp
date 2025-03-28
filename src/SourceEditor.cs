@@ -148,7 +148,7 @@ public class SourceEditor {
     private WSocket.WebSocketServer? WsServer = null;
     private WsMessageParser Parser = new WsMessageParser();
     private bool SyncChanges = false;
-    private bool TakeModificationInAccount = true;
+    private int TakeModificationInAccount = 0;
     private string? OldBufferText = null;
 
     public SourceEditor() {
@@ -177,8 +177,8 @@ public class SourceEditor {
         this.NewFile();
         // For collaborative editing
         this.Buffer.OnChanged += (buffer, args) => {
-            if (!this.TakeModificationInAccount) {
-                this.TakeModificationInAccount = true;
+            if (this.TakeModificationInAccount != 0) {
+                this.IncrementTakeModificationInAccount();
                 return;
             }
             this.GetDiffs();
@@ -296,10 +296,10 @@ public class SourceEditor {
         var final_message = Parser.ParseMessage(message);
         if (final_message.Type == WsMessageParser.MessageType.FullMessageComplete) {
             // Console.WriteLine($"Received: {final_message.Content}");
-            this.TakeModificationInAccount = false;
+            this.TakeModificationInAccount = 1;
             this.Buffer.Text = final_message.Content;
         } else if (final_message.Type == WsMessageParser.MessageType.RelativeMessageComplete) {
-            this.TakeModificationInAccount = false;
+            this.TakeModificationInAccount = 1;
             var MessageContent = final_message.Content.Split(':');
             if (MessageContent[0] == "insertion") {
                 if (int.Parse(MessageContent[1]) > this.Buffer.Text.Length)
@@ -381,6 +381,10 @@ public class SourceEditor {
     private void StopSync() {
         this.SyncChanges = false;
         this.OldBufferText = null;
+    }
+
+    private void IncrementTakeModificationInAccount() {
+        this.TakeModificationInAccount = this.TakeModificationInAccount == 2 ? 0 : this.TakeModificationInAccount + 1;
     }
 
     // Manuals Getters and setters
