@@ -270,10 +270,7 @@ public class SourceEditor {
         this.WsClient = new WSocket.WebSocketClient($"ws://{server}:{port}/");
         try {
             this.WsClient.Connected += (s, e) => Console.WriteLine("Connected to server");
-            this.WsClient.Disconnected += (s, e) => {
-                this.StopWebSocketClient(statusBar);
-                Console.WriteLine("Disconnected from server");
-            };
+            this.WsClient.Disconnected += (s, e) => Console.WriteLine("Disconnected from server");
             this.WsClient.MessageReceived += (s, message) => {
                 this.ReceivedMessage(message);
             };
@@ -288,6 +285,18 @@ public class SourceEditor {
             this.WsClient = null;
             this.StopSync();
         }
+    }
+
+    public async void StopWebSocketClient(Gtk.Label statusBar) {
+        if (this.WsClient is null) {
+            statusBar.SetLabel(Globals.Languages.ServeTrad("client_not_connected"));
+            return;
+        }
+        await this.WsClient.DisconnectAsync();
+        this.WsClient.Dispose();
+        this.WsClient = null;
+        this.StopSync();
+        statusBar.SetLabel(Globals.Languages.ServeTrad("client_disconnected"));
     }
 
     private void ReceivedMessage(string message) {
@@ -316,18 +325,6 @@ public class SourceEditor {
                 }
             }
         }
-    }
-
-    public async void StopWebSocketClient(Gtk.Label statusBar) {
-        if (this.WsClient is null) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("client_not_connected"));
-            return;
-        }
-        await this.WsClient.DisconnectAsync();
-        this.WsClient.Dispose();
-        this.WsClient = null;
-        this.StopSync();
-        statusBar.SetLabel(Globals.Languages.ServeTrad("client_disconnected"));
     }
 
     async private void GetDiffs() {
