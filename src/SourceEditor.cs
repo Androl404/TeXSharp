@@ -148,7 +148,6 @@ public class SourceEditor {
     private WSocket.WebSocketServer? WsServer = null;
     private WsMessageParser Parser = new WsMessageParser();
     private bool SyncChanges = false;
-    private int TakeModificationInAccount = 0;
     private string? OldBufferText = null;
 
     public SourceEditor() {
@@ -177,10 +176,7 @@ public class SourceEditor {
         this.NewFile();
         // For collaborative editing
         this.Buffer.OnChanged += (buffer, args) => {
-            if (this.TakeModificationInAccount != 0) {
-                this.IncrementTakeModificationInAccount();
-                return;
-            }
+            if (this.Buffer.Text.Length == this.OldBufferText.Length) return;
             this.GetDiffs();
             this.OldBufferText = this.Buffer.Text;
         };
@@ -297,21 +293,24 @@ public class SourceEditor {
         var final_message = Parser.ParseMessage(message);
         if (final_message.Type == WsMessageParser.MessageType.FullMessageComplete) {
             // Console.WriteLine($"Received: {final_message.Content}");
-            this.TakeModificationInAccount = 1;
+            this.OldBufferText = final_message.Content;
             this.Buffer.Text = final_message.Content;
         } else if (final_message.Type == WsMessageParser.MessageType.RelativeMessageComplete) {
-            this.TakeModificationInAccount = 1;
             var MessageContent = final_message.Content.Split(':');
             if (MessageContent[0] == "insertion") {
                 if (int.Parse(MessageContent[1]) > this.Buffer.Text.Length)
+                    this.OldBufferText += MessageContent[2][0].ToString();
                     this.Buffer.Text += MessageContent[2][0].ToString();
                 else
+                    this.OldBufferText = this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2][0].ToString());
                     this.Buffer.Text = this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2][0].ToString());
             }
             else if (MessageContent[0] == "deletion") {
                 if (int.Parse(MessageContent[1]) == this.Buffer.Text.Length)
+                    this.OldBufferText = this.Buffer.Text[..^1];
                     this.Buffer.Text = this.Buffer.Text[..^1];
                 else
+                    this.OldBufferText = this.Buffer.Text.Remove(int.Parse(MessageContent[1]), 1);
                     this.Buffer.Text = this.Buffer.Text.Remove(int.Parse(MessageContent[1]), 1);
             }
         }
@@ -372,6 +371,7 @@ public class SourceEditor {
                 await this.WsClient.SendMessageAsync(message);
             }
         }
+        this.OldBufferText = this.Buffer.Text;
     }
 
     private void StartSync() {
@@ -382,10 +382,6 @@ public class SourceEditor {
     private void StopSync() {
         this.SyncChanges = false;
         this.OldBufferText = null;
-    }
-
-    private void IncrementTakeModificationInAccount() {
-        this.TakeModificationInAccount = this.TakeModificationInAccount == 2 ? 0 : this.TakeModificationInAccount + 1;
     }
 
     // Manuals Getters and setters
