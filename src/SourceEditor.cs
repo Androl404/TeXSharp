@@ -176,6 +176,7 @@ public class SourceEditor {
         this.NewFile();
         // For collaborative editing
         this.Buffer.OnChanged += (buffer, args) => {
+            if (this.Buffer.Text is null || this.OldBufferText is null) return;
             if (this.Buffer.Text.Length == this.OldBufferText.Length) return;
             this.GetDiffs();
             this.OldBufferText = this.Buffer.Text;
