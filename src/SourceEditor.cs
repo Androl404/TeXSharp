@@ -344,7 +344,7 @@ public class SourceEditor {
             Insertion = false;
             Length = Text.Length;
         }
-        else { // Strings are equals of differ of multiple caracters, we should send all the buffer
+        else if (Text.Length != this.OldBufferText.Length) { // Strings differ of multiple caracters, we should send all the buffer
             if (!(this.WsServer is null)) { // The server is active
                 await this.WsServer.BroadcastMessage($"full:sample-guid-1234:START\n" + Text + $"\nfull:sample-guid-1234:STOP\n");
             } else if (!(this.WsClient is null)) { // The client is active
