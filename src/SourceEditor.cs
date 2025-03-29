@@ -298,20 +298,21 @@ public class SourceEditor {
         } else if (final_message.Type == WsMessageParser.MessageType.RelativeMessageComplete) {
             var MessageContent = final_message.Content.Split(':');
             if (MessageContent[0] == "insertion") {
-                if (int.Parse(MessageContent[1]) > this.Buffer.Text.Length)
+                if (int.Parse(MessageContent[1]) > this.Buffer.Text.Length) {
                     this.OldBufferText += MessageContent[2][0].ToString();
                     this.Buffer.Text += MessageContent[2][0].ToString();
-                else
+                } else {
                     this.OldBufferText = this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2][0].ToString());
                     this.Buffer.Text = this.Buffer.Text.Insert(int.Parse(MessageContent[1]), MessageContent[2][0].ToString());
-            }
-            else if (MessageContent[0] == "deletion") {
-                if (int.Parse(MessageContent[1]) == this.Buffer.Text.Length)
+                }
+            } else if (MessageContent[0] == "deletion") {
+                if (int.Parse(MessageContent[1]) == this.Buffer.Text.Length) {
                     this.OldBufferText = this.Buffer.Text[..^1];
                     this.Buffer.Text = this.Buffer.Text[..^1];
-                else
+                } else {
                     this.OldBufferText = this.Buffer.Text.Remove(int.Parse(MessageContent[1]), 1);
                     this.Buffer.Text = this.Buffer.Text.Remove(int.Parse(MessageContent[1]), 1);
+                }
             }
         }
     }
