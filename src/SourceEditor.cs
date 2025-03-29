@@ -284,6 +284,7 @@ public class SourceEditor {
             statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
             await this.WsClient.ConnectAsync();
             this.StartSync();
+            this.OldBufferText = this.Buffer.Text;
         } catch (Exception e) {
             statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_not_connect") + " " + e.Message);
             this.WsClient.Dispose();
