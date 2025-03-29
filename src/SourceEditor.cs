@@ -308,6 +308,8 @@ public class SourceEditor {
         } else if (final_message.Type == WsMessageParser.MessageType.RelativeMessageComplete) {
             var MessageContent = final_message.Content.Split(':');
             if (MessageContent[0] == "insertion") {
+                if (MessageContent[2].Contains("/colon/"))
+                    MessageContent[2] = ":";
                 if (int.Parse(MessageContent[1]) > this.Buffer.Text.Length) {
                     this.OldBufferText += MessageContent[2][0].ToString();
                     this.Buffer.Text += MessageContent[2][0].ToString();
@@ -347,7 +349,10 @@ public class SourceEditor {
         for (int i = 0; i < Length; i++) {
             if (Text[i] != this.OldBufferText[i]) {
                 if ((bool)Insertion) {
-                    Diff = $"insertion:{i}:{Text[i]}";
+                    if (!(Text[i] == ':'))
+                        Diff = $"insertion:{i}:{Text[i]}";
+                    else
+                        Diff = $"insertion:{i}:/colon/";
                     break;
                 } else {
                     Diff = $"deletion:{i}:{this.OldBufferText[i]}";
@@ -357,7 +362,10 @@ public class SourceEditor {
         }
         if (Diff == string.Empty) {
             if ((bool)Insertion) {
-                Diff = $"insertion:{Text.Length}:{Text[Text.Length - 1]}";
+                if (!(Text[Text.Length - 1] == ':'))
+                    Diff = $"insertion:{Text.Length}:{Text[Text.Length - 1]}";
+                else
+                    Diff = $"insertion:{Text.Length}:/colon/";
             } else {
                 Diff = $"deletion:{this.OldBufferText.Length}:{this.OldBufferText[this.OldBufferText.Length - 1]}";
             }
