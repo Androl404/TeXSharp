@@ -344,7 +344,15 @@ public class SourceEditor {
             Insertion = false;
             Length = Text.Length;
         }
-        else return; // Strings are equals, something wrong is going on...
+        else { // Strings are equals of differ of multiple caracters, we should send all the buffer
+            if (!(this.WsServer is null)) { // The server is active
+                await this.WsServer.BroadcastMessage($"full:sample-guid-1234:START\n" + this.Buffer.Text + $"\nfull:sample-guid-1234:STOP\n");
+            } else if (!(this.WsClient is null)) { // The client is active
+                await this.WsClient.SendMessageAsync($"full:sample-guid-1234:START\n" + this.Buffer.Text + $"\nfull:sample-guid-1234:STOP\n");
+            }
+            this.OldBufferText = this.Buffer.Text;
+            return;
+        }
         // We should send a full copy of the file then
         for (int i = 0; i < Length; i++) {
             if (Text[i] != this.OldBufferText[i]) {
