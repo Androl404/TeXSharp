@@ -81,7 +81,7 @@ public class WebSocketServer {
 
                     if (result.MessageType == WebSocketMessageType.Close) {
                         await HandleClientDisconnection(clientId, true);
-                        break;
+                        // break;
                     }
 
                     if (result.MessageType == WebSocketMessageType.Text) {
@@ -108,7 +108,7 @@ public class WebSocketServer {
     }
 
     private async Task HandleMessage(Guid senderId, string message) {
-        Console.WriteLine($"Received from {senderId}: {message}");
+        // Console.WriteLine($"Received from {senderId}: {message}");
         MessageReceived?.Invoke(this, message);
 
         // Example: Broadcast message to all other clients
