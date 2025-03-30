@@ -351,8 +351,9 @@ public class SourceEditor {
                 await this.WsClient.SendMessageAsync($"full:sample-guid-1234:START\n" + Text + $"\nfull:sample-guid-1234:STOP\n");
             }
             this.OldBufferText = Text;
+            Console.WriteLine($"full:sample-guid-1234:START\n" + Text + $"\nfull:sample-guid-1234:STOP\n");
             return;
-        }
+        } else return; // The strings are equals, ans something weird is going on.
         // We should send a full copy of the file then
         for (int i = 0; i < Length; i++) {
             if (Text[i] != this.OldBufferText[i]) {
@@ -379,6 +380,7 @@ public class SourceEditor {
             }
         }
         string message = $"relative:START\n{Diff}\nrelative:STOP\n";
+        Console.WriteLine(message);
         if (Diff != string.Empty) {
             if (!(this.WsServer is null)) { // The server is active
                 await this.WsServer.BroadcastMessage(message);
