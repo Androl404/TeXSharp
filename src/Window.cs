@@ -46,6 +46,11 @@ class Window {
         this.EditorWrapper._EditorNotebook.SetScrollable(true);
         this.MakeButtonBar();
         this.MakePDFViewerWrapper(null);
+        this.MWindow.OnCloseRequest += (sender, args) => {
+            if (this.EditorWrapper.GetCurrentSourceEditor().GetFileExists())
+                this.GetFunc("save")(sender, null);
+            return false;
+        };
     }
 
     // To construct the header bar of the window
