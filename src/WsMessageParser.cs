@@ -113,10 +113,10 @@ public class WsMessageParser {
     /// Represents the type of message parsed
     /// </summary>
     public enum MessageType {
-        FullMessageStart,    // First part of a full message
-        FullMessagePartial,  // Intermediate part of a full message
-        FullMessageComplete, // Final part of a full message
+        FullMessageStart,        // First part of a full message
+        FullMessagePartial,      // Intermediate part of a full message
+        FullMessageComplete,     // Final part of a full message
         RelativeMessageComplete, // Full part of a relative message
-        Unrecognized         // Message not related to full message parsing
+        Unrecognized             // Message not related to full message parsing
     }
 }

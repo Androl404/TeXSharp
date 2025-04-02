@@ -28,8 +28,7 @@ public class WebSocketClient : IDisposable {
     public async Task ConnectAsync() {
         try {
             if (webSocket.State != WebSocketState.Open) {
-                await webSocket.ConnectAsync(serverUri,
-                                             clientCancellation.Token);
+                await webSocket.ConnectAsync(serverUri, clientCancellation.Token);
                 Connected?.Invoke(this, EventArgs.Empty);
 
                 // Start receiving messages
@@ -44,18 +43,15 @@ public class WebSocketClient : IDisposable {
     private async Task ReceiveMessagesAsync() {
         var buffer = new byte[4096];
         try {
-            while (webSocket.State == WebSocketState.Open &&
-                   !clientCancellation.Token.IsCancellationRequested) {
-                var result = await webSocket.ReceiveAsync(
-                    new ArraySegment<byte>(buffer), clientCancellation.Token);
+            while (webSocket.State == WebSocketState.Open && !clientCancellation.Token.IsCancellationRequested) {
+                var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), clientCancellation.Token);
 
                 if (result.MessageType == WebSocketMessageType.Close) {
                     break;
                 }
 
                 if (result.MessageType == WebSocketMessageType.Text) {
-                    var message =
-                        Encoding.UTF8.GetString(buffer, 0, result.Count);
+                    var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
                     MessageReceived?.Invoke(this, message);
                 }
             }
@@ -63,8 +59,7 @@ public class WebSocketClient : IDisposable {
             // Normal cancellation, ignore
         } catch (WebSocketException) {
             // WebSocket was closed, ignore
-        } catch (Exception ex)
-            when (!clientCancellation.Token.IsCancellationRequested) {
+        } catch (Exception ex) when (!clientCancellation.Token.IsCancellationRequested) {
             ErrorOccurred?.Invoke(this, ex);
         }
     }
@@ -75,9 +70,7 @@ public class WebSocketClient : IDisposable {
                 throw new InvalidOperationException("Connection is not open");
 
             var buffer = Encoding.UTF8.GetBytes(message);
-            await webSocket.SendAsync(new ArraySegment<byte>(buffer),
-                                      WebSocketMessageType.Text, true,
-                                      clientCancellation.Token);
+            await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, clientCancellation.Token);
         } catch (Exception ex) {
             ErrorOccurred?.Invoke(this, ex);
             throw;
@@ -93,15 +86,12 @@ public class WebSocketClient : IDisposable {
             clientCancellation.Cancel();
 
             // Create a timeout token
-            using var timeoutCts =
-                new CancellationTokenSource(DisconnectTimeoutMs);
+            using var timeoutCts = new CancellationTokenSource(DisconnectTimeoutMs);
 
             try {
                 if (webSocket.State == WebSocketState.Open) {
                     // Try to close gracefully with timeout
-                    await webSocket.CloseAsync(
-                        WebSocketCloseStatus.NormalClosure,
-                        "Client disconnecting", timeoutCts.Token);
+                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", timeoutCts.Token);
                 }
             } catch (OperationCanceledException) {
                 // Timeout or cancellation occurred, force close
@@ -137,8 +127,7 @@ public class WebSocketClient : IDisposable {
         if (disposing) {
             try {
                 // Force synchronous disconnection with timeout
-                Task.Run(async () => await DisconnectAsync())
-                    .Wait(DisconnectTimeoutMs);
+                Task.Run(async () => await DisconnectAsync()).Wait(DisconnectTimeoutMs);
             } catch {
                 // Ignore any errors during forced disposal
             }

@@ -75,9 +75,7 @@ public class WebSocketServer {
         try {
             while (webSocket.State == WebSocketState.Open) {
                 try {
-                    var result = await webSocket.ReceiveAsync(
-                        new ArraySegment<byte>(buffer),
-                        serverCancellation.Token);
+                    var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), serverCancellation.Token);
 
                     if (result.MessageType == WebSocketMessageType.Close) {
                         await HandleClientDisconnection(clientId, true);
@@ -85,14 +83,10 @@ public class WebSocketServer {
                     }
 
                     if (result.MessageType == WebSocketMessageType.Text) {
-                        var message =
-                            Encoding.UTF8.GetString(buffer, 0, result.Count);
+                        var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
                         await HandleMessage(clientId, message);
                     }
-                } catch (WebSocketException wsEx)
-                    when (wsEx.WebSocketErrorCode ==
-                              WebSocketError.ConnectionClosedPrematurely ||
-                          webSocket.State != WebSocketState.Open) {
+                } catch (WebSocketException wsEx) when (wsEx.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely || webSocket.State != WebSocketState.Open) {
                     // Handle abrupt client disconnection
                     await HandleClientDisconnection(clientId, false);
                     break;
@@ -113,14 +107,10 @@ public class WebSocketServer {
 
         // Example: Broadcast message to all other clients
         foreach (var client in clients) {
-            if (client.Key != senderId &&
-                client.Value.State == WebSocketState.Open) {
+            if (client.Key != senderId && client.Value.State == WebSocketState.Open) {
                 try {
                     var bytes = Encoding.UTF8.GetBytes(message);
-                    await client.Value.SendAsync(new ArraySegment<byte>(bytes),
-                                                 WebSocketMessageType.Text,
-                                                 true,
-                                                 serverCancellation.Token);
+                    await client.Value.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, serverCancellation.Token);
                 } catch (WebSocketException) {
                     // Handle failed message delivery by removing the client
                     await HandleClientDisconnection(client.Key, false);
@@ -129,23 +119,19 @@ public class WebSocketServer {
         }
     }
 
-    private async Task HandleClientDisconnection(Guid clientId,
-                                                 bool isGraceful) {
+    private async Task HandleClientDisconnection(Guid clientId, bool isGraceful) {
         if (clients.TryRemove(clientId, out var webSocket)) {
             try {
                 if (webSocket.State == WebSocketState.Open && isGraceful) {
                     // Only try graceful shutdown if the connection is still
                     // open
-                    await webSocket.CloseAsync(
-                        WebSocketCloseStatus.NormalClosure,
-                        "Server closing connection", CancellationToken.None);
+                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server closing connection", CancellationToken.None);
                 }
             } catch (WebSocketException) {
                 // Ignore websocket errors during shutdown
             } finally {
                 clientStates.TryRemove(clientId, out _);
-                Console.WriteLine(
-                    $"Client {clientId} disconnected {(isGraceful ? "gracefully" : "abruptly")}");
+                Console.WriteLine($"Client {clientId} disconnected {(isGraceful ? "gracefully" : "abruptly")}");
             }
         }
     }
@@ -155,12 +141,10 @@ public class WebSocketServer {
             serverCancellation.Cancel();
 
             // Close all client connections
-            var disconnectionTasks = clients.Keys.Select(
-                clientId => HandleClientDisconnection(clientId, true));
+            var disconnectionTasks = clients.Keys.Select(clientId => HandleClientDisconnection(clientId, true));
 
             // Wait for all clients to disconnect with timeout
-            await Task.WhenAll(disconnectionTasks)
-                .WaitAsync(TimeSpan.FromSeconds(5));
+            await Task.WhenAll(disconnectionTasks).WaitAsync(TimeSpan.FromSeconds(5));
 
             listener.Stop();
             Console.WriteLine("Server stopped");
@@ -176,10 +160,7 @@ public class WebSocketServer {
         foreach (var client in clients) {
             try {
                 if (client.Value.State == WebSocketState.Open) {
-                    await client.Value.SendAsync(new ArraySegment<byte>(buffer),
-                                                 WebSocketMessageType.Text,
-                                                 true,
-                                                 serverCancellation.Token);
+                    await client.Value.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, serverCancellation.Token);
                 } else {
                     failedClients.Add(client.Key);
                 }
@@ -201,10 +182,7 @@ public class WebSocketServer {
         var client_ws = clients[clientId];
         try {
             if (client_ws.State == WebSocketState.Open) {
-                await client_ws.SendAsync(new ArraySegment<byte>(buffer),
-                                          WebSocketMessageType.Text,
-                                          true,
-                                          serverCancellation.Token);
+                await client_ws.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, serverCancellation.Token);
             } else {
                 failedClients.Add(clientId);
             }

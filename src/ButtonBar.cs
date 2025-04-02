@@ -13,7 +13,7 @@ class ButtonBar {
     private Dictionary<string, Gtk.Button> ButtonList = new Dictionary<string, Gtk.Button>();
     private Dictionary<string, Gtk.CallbackAction> Actions = new Dictionary<string, Gtk.CallbackAction>();
 
-    public ButtonBar() { }
+    public ButtonBar() {}
 
     public void AddButton(string label, Gtk.Image image, Func<object?, EventArgs, System.Threading.Tasks.Task>? func) {
         if (func is null)
@@ -31,7 +31,7 @@ class ButtonBar {
         this.Box.Append(button);
     }
 
-     public void AddShortcut(Gtk.Widget widget, string trigger, string actionName, Func<object?, EventArgs, System.Threading.Tasks.Task>? func, Object? sender) {
+    public void AddShortcut(Gtk.Widget widget, string trigger, string actionName, Func<object?, EventArgs, System.Threading.Tasks.Task>? func, Object? sender) {
         if (func is null)
             throw new System.ArgumentNullException("The function passed as argument is null.");
         // Create a ShortcutController and set its scope

@@ -176,8 +176,10 @@ public class SourceEditor {
         this.NewFile();
         // For collaborative editing
         this.Buffer.OnChanged += (buffer, args) => {
-            if (this.Buffer.Text is null || this.OldBufferText is null) return;
-            if (this.Buffer.Text.Length == this.OldBufferText.Length) return;
+            if (this.Buffer.Text is null || this.OldBufferText is null)
+                return;
+            if (this.Buffer.Text.Length == this.OldBufferText.Length)
+                return;
             this.GetDiffs();
             this.OldBufferText = this.Buffer.Text;
         };
@@ -229,9 +231,7 @@ public class SourceEditor {
         try {
             statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_start"));
             this.StartSync();
-            this.WsServer.MessageReceived += (s, message) => {
-                this.ReceivedMessage(message);
-            };
+            this.WsServer.MessageReceived += (s, message) => { this.ReceivedMessage(message); };
             await this.WsServer.StartAsync(statusBar);
             if (this.WsServer._Failed) {
                 statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start"));
@@ -271,9 +271,7 @@ public class SourceEditor {
         try {
             this.WsClient.Connected += (s, e) => Console.WriteLine("Connected to server");
             this.WsClient.Disconnected += (s, e) => Console.WriteLine("Disconnected from server");
-            this.WsClient.MessageReceived += (s, message) => {
-                this.ReceivedMessage(message);
-            };
+            this.WsClient.MessageReceived += (s, message) => { this.ReceivedMessage(message); };
             this.WsClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
             statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
             await this.WsClient.ConnectAsync();
@@ -318,7 +316,7 @@ public class SourceEditor {
                 }
             } else if (MessageContent[0] == "deletion") {
                 if (int.Parse(MessageContent[1]) == this.Buffer.Text.Length) {
-                    this.Buffer.Text = this.Buffer.Text[..^1];
+                    this.Buffer.Text = this.Buffer.Text[..^ 1];
                 } else {
                     this.Buffer.Text = this.Buffer.Text.Remove(int.Parse(MessageContent[1]), 1);
                 }
@@ -328,7 +326,8 @@ public class SourceEditor {
     }
 
     async private void GetDiffs() {
-        if (!this.SyncChanges) return;
+        if (!this.SyncChanges)
+            return;
         string? Text = this.Buffer.Text;
         bool? Insertion = null;
         int Length = 0;
@@ -341,16 +340,16 @@ public class SourceEditor {
             // Deletion
             Insertion = false;
             Length = Text.Length;
-        }
-        else if (Text.Length != this.OldBufferText.Length) { // Strings differ of multiple caracters, we should send all the buffer
-            if (!(this.WsServer is null)) { // The server is active
+        } else if (Text.Length != this.OldBufferText.Length) { // Strings differ of multiple caracters, we should send all the buffer
+            if (!(this.WsServer is null)) {                    // The server is active
                 await this.WsServer.BroadcastMessage($"full:sample-guid-1234:START\n" + Text + $"\nfull:sample-guid-1234:STOP\n");
             } else if (!(this.WsClient is null)) { // The client is active
                 await this.WsClient.SendMessageAsync($"full:sample-guid-1234:START\n" + Text + $"\nfull:sample-guid-1234:STOP\n");
             }
             this.OldBufferText = Text;
             return;
-        } else return; // The strings are equals, ans something weird is going on.
+        } else
+            return; // The strings are equals, ans something weird is going on.
         // We should send a full copy of the file then
         for (int i = 0; i < Length; i++) {
             if (Text[i] != this.OldBufferText[i]) {

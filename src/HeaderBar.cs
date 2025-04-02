@@ -10,11 +10,11 @@ class AppHeaderBar {
     }
     private Gtk.MenuButton? MenuButton;
 
-    public AppHeaderBar() { }
+    public AppHeaderBar() {}
 
     public void AddMenuButon(Gio.ThemedIcon icon, bool frame) {
-        var Button = Gtk.MenuButton.New();              // We create a button
-        Button.SetHasFrame(frame);                      // without a frame
+        var Button = Gtk.MenuButton.New();             // We create a button
+        Button.SetHasFrame(frame);                     // without a frame
         var ButtonIcon = Gtk.Image.NewFromGicon(icon); // We create an image with an icon
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         Button.SetChild(ButtonIcon); // We set the icon as child of the button (the child will be contained in the button)
