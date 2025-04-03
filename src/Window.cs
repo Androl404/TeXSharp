@@ -113,9 +113,8 @@ class Window {
             // Usage of Gtk.Picture widget
             // ---------------------------
             // Usage of Gtk.Picture widget instead of Gtk.Image
-            var ImagePdf = Gtk.Picture.New();
             // for (int i = 1; i <= pdf.PageCount; ++i) {
-            ImagePdf = Gtk.Picture.NewForFilename(Path + i + ".png");
+            var ImagePdf = Gtk.Picture.NewForFilename(Path + i + ".png");
             // Make the image fill the available space horizontally
             ImagePdf.SetHexpand(true);
             ImagePdf.SetContentFit(ContentFit.Fill);
