@@ -40,8 +40,8 @@ public class Languages {
     /// <returns>This method doesn't return anything.</returns>
     private void Initialize() {
         _locale = GetLocaleFromLanguage(Globals.Settings._SettingsValues.Language);
-        _languageTable =  GetLanguageTable();
-        _translations =  GetTranslations();
+        _languageTable = GetLanguageTable();
+        _translations = GetTranslations();
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public class Languages {
         var languages = new List<string>();
 
         using var conn = new SqliteConnection($"Data Source={_dbPath}");
-         conn.Open();
+        conn.Open();
 
         const string query = "SELECT full_name FROM LANGUAGES";
         using var cmd = new SqliteCommand(query, conn);
