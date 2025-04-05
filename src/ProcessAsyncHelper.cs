@@ -3,11 +3,14 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 
-public static class ProcessAsyncHelper {
-    public static async Task<ProcessResult> ExecuteShellCommand(string command, string arguments, int timeout) {
+public static class ProcessAsyncHelper
+{
+    public static async Task<ProcessResult> ExecuteShellCommand(string command, string arguments, int timeout)
+    {
         var result = new ProcessResult();
 
-        using (var process = new Process()) {
+        using (var process = new Process())
+        {
             // If you run bash-script on Linux it is possible that ExitCode can be 255.
             // To fix it you can try to add '#!/bin/bash' header to the script.
 
@@ -22,11 +25,15 @@ public static class ProcessAsyncHelper {
             var outputBuilder = new StringBuilder();
             var outputCloseEvent = new TaskCompletionSource<bool>();
 
-            process.OutputDataReceived += (s, e) => {
+            process.OutputDataReceived += (s, e) =>
+            {
                 // The output stream has been closed i.e. the process has terminated
-                if (e.Data == null) {
+                if (e.Data == null)
+                {
                     outputCloseEvent.SetResult(true);
-                } else {
+                }
+                else
+                {
                     outputBuilder.AppendLine(e.Data);
                 }
             };
@@ -34,20 +41,27 @@ public static class ProcessAsyncHelper {
             var errorBuilder = new StringBuilder();
             var errorCloseEvent = new TaskCompletionSource<bool>();
 
-            process.ErrorDataReceived += (s, e) => {
+            process.ErrorDataReceived += (s, e) =>
+            {
                 // The error stream has been closed i.e. the process has terminated
-                if (e.Data == null) {
+                if (e.Data == null)
+                {
                     errorCloseEvent.SetResult(true);
-                } else {
+                }
+                else
+                {
                     errorBuilder.AppendLine(e.Data);
                 }
             };
 
             bool isStarted;
 
-            try {
+            try
+            {
                 isStarted = process.Start();
-            } catch (Exception error) {
+            }
+            catch (Exception error)
+            {
                 // Usually it occurs when an executable file is not found or is not executable
 
                 result.Completed = true;
@@ -57,7 +71,8 @@ public static class ProcessAsyncHelper {
                 isStarted = false;
             }
 
-            if (isStarted) {
+            if (isStarted)
+            {
                 // Reads the output stream first and then waits because deadlocks are possible
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
@@ -69,19 +84,27 @@ public static class ProcessAsyncHelper {
                 var processTask = Task.WhenAll(waitForExit, outputCloseEvent.Task, errorCloseEvent.Task);
 
                 // Waits process completion and then checks it was not completed by timeout
-                if (await Task.WhenAny(Task.Delay(timeout), processTask) == processTask && waitForExit.Result) {
+                if (await Task.WhenAny(Task.Delay(timeout), processTask) == processTask && waitForExit.Result)
+                {
                     result.Completed = true;
                     result.ExitCode = process.ExitCode;
+                    result.Output = $"{outputBuilder}{errorBuilder}";
 
                     // Adds process output if it was completed with error
-                    if (process.ExitCode != 0) {
+                    if (process.ExitCode != 0)
+                    {
                         result.Output = $"{outputBuilder}{errorBuilder}";
                     }
-                } else {
-                    try {
+                }
+                else
+                {
+                    try
+                    {
                         // Kill hung process
                         process.Kill();
-                    } catch {
+                    }
+                    catch
+                    {
                     }
                 }
             }
@@ -92,7 +115,8 @@ public static class ProcessAsyncHelper {
 
     private static Task<bool> WaitForExitAsync(Process process, int timeout) { return Task.Run(() => process.WaitForExit(timeout)); }
 
-    public struct ProcessResult {
+    public struct ProcessResult
+    {
         public bool Completed;
         public int? ExitCode;
         public string Output;
