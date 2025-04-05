@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 /// <summary>
 /// Provides asynchronous execution functionality for shell commands.
 /// </summary>
-public static class ProcessAsyncHelper
-{
+public static class ProcessAsyncHelper {
     /// <summary>
     /// Executes a shell command asynchronously with a specified timeout.
     /// Captures both standard output and standard error.
@@ -19,12 +18,10 @@ public static class ProcessAsyncHelper
     /// A task that resolves to a <see cref="ProcessResult"/> indicating
     /// success, exit code, and any output or error messages.
     /// </returns>
-    public static async Task<ProcessResult> ExecuteShellCommand(string command, string arguments, int timeout)
-    {
+    public static async Task<ProcessResult> ExecuteShellCommand(string command, string arguments, int timeout) {
         var result = new ProcessResult();
 
-        using (var process = new Process())
-        {
+        using (var process = new Process()) {
             // Set up process start info
             process.StartInfo.FileName = command;
             process.StartInfo.Arguments = arguments;
@@ -38,15 +35,11 @@ public static class ProcessAsyncHelper
             var outputCloseEvent = new TaskCompletionSource<bool>();
 
             // Handle standard output stream
-            process.OutputDataReceived += (s, e) =>
-            {
-                if (e.Data == null)
-                {
+            process.OutputDataReceived += (s, e) => {
+                if (e.Data == null) {
                     // Output stream closed
                     outputCloseEvent.SetResult(true);
-                }
-                else
-                {
+                } else {
                     outputBuilder.AppendLine(e.Data);
                 }
             };
@@ -55,28 +48,21 @@ public static class ProcessAsyncHelper
             var errorCloseEvent = new TaskCompletionSource<bool>();
 
             // Handle standard error stream
-            process.ErrorDataReceived += (s, e) =>
-            {
-                if (e.Data == null)
-                {
+            process.ErrorDataReceived += (s, e) => {
+                if (e.Data == null) {
                     // Error stream closed
                     errorCloseEvent.SetResult(true);
-                }
-                else
-                {
+                } else {
                     errorBuilder.AppendLine(e.Data);
                 }
             };
 
             bool isStarted;
 
-            try
-            {
+            try {
                 // Attempt to start the process
                 isStarted = process.Start();
-            }
-            catch (Exception error)
-            {
+            } catch (Exception error) {
                 // Process start failed (e.g. executable not found)
                 result.Completed = true;
                 result.ExitCode = -1;
@@ -84,8 +70,7 @@ public static class ProcessAsyncHelper
                 isStarted = false;
             }
 
-            if (isStarted)
-            {
+            if (isStarted) {
                 // Begin reading output and error asynchronously
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
@@ -97,27 +82,20 @@ public static class ProcessAsyncHelper
                 var processTask = Task.WhenAll(waitForExit, outputCloseEvent.Task, errorCloseEvent.Task);
 
                 // Wait for process task to finish or timeout
-                if (await Task.WhenAny(Task.Delay(timeout), processTask) == processTask && waitForExit.Result)
-                {
+                if (await Task.WhenAny(Task.Delay(timeout), processTask) == processTask && waitForExit.Result) {
                     result.Completed = true;
                     result.ExitCode = process.ExitCode;
                     result.Output = $"{outputBuilder}{errorBuilder}";
 
                     // If error occurred, append output and error messages
-                    if (process.ExitCode != 0)
-                    {
+                    if (process.ExitCode != 0) {
                         result.Output = $"{outputBuilder}{errorBuilder}";
                     }
-                }
-                else
-                {
-                    try
-                    {
+                } else {
+                    try {
                         // Kill the process if it's hanging
                         process.Kill();
-                    }
-                    catch
-                    {
+                    } catch {
                         // Ignored: Process may have already exited or cannot be killed
                     }
                 }
@@ -138,8 +116,7 @@ public static class ProcessAsyncHelper
     /// <summary>
     /// Represents the result of a process execution.
     /// </summary>
-    public struct ProcessResult
-    {
+    public struct ProcessResult {
         /// <value>
         /// Indicates whether the process completed (including after being killed).
         /// </value>
