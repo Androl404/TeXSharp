@@ -18,7 +18,7 @@ public class LogErrorParser {
     /// </summary>
     /// <param name="line">The line of text to analyze.</param>
     /// <returns>True if the line contains only a repeated character; false otherwise.</returns>
-    static public bool IsDummyLine(string line) { return Regex.IsMatch(line, @"^(.)\1*$"); }
+    static public bool IsDummyLine(string line) { return Regex.IsMatch(line, @"/^(.)\1*$/"); }
 
     /// <summary>
     /// Checks if the line denotes the start of a file-related section in the log.
@@ -43,7 +43,7 @@ public class LogErrorParser {
             return_string = "warning";
         } else if (line.StartsWith('!')) {
             return_string = "error";
-        } else if (Regex.IsMatch(line.ToLower(), @"\binfo\b[^\w]?") || line.Contains("Overfull") || line.Contains("Underfull")) {
+        } else if (Regex.IsMatch(line.ToLower(), @"/\binfo\b[^\w]?/") || line.Contains("Overfull") || line.Contains("Underfull")) {
             return_string = "info";
         }
         return return_string;
