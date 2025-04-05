@@ -1,23 +1,35 @@
+using System.Diagnostics;
 using Gtk;
 using GtkSource;
 
+/// <summary>
+/// Wrapper class managing a notebook of source editors.
+/// Provides tabbed editing functionality.
+/// </summary>
 public class SourceEditorWrapper {
+    /// <value>Attribute containing the notebook for multiple files.</value>
     private Gtk.Notebook EditorNotebook = Gtk.Notebook.New();
+    /// <value>Public getter for the internal Gtk.Notebook used to manage tabs.</value>
     public Gtk.Notebook _EditorNotebook {
         get { return this.EditorNotebook; }
     }
 
+    /// <value>List of all the source editors to manage the multiple files.</value>
+    /// <remarks>The idnex must be the same than in the <c>EditorNotebook</c>.</remarks>
     private List<SourceEditor> Editors = new List<SourceEditor>();
 
+    /// <summary>
+    /// Initializes the editor wrapper with a single default tab.
+    /// </summary>
     public SourceEditorWrapper(Gtk.Window window) {
         this.Editors.Add(new SourceEditor());
-        this.EditorNotebook.AppendPage(this.Editors[0]._Box, EditorNotebookTabLabel(Globals.Languages.ServeTrad("new_file")));
+        this.EditorNotebook.AppendPage(this.Editors[0]._Box, EditorNotebookTabLabel(Globals.Languages.Translate("new_file")));
         this.EditorNotebook.SetTabReorderable(this.Editors[0]._Box, true);
         // TODO: Change title of Window when tabs are switched in the Notebook
         // this.EditorNotebook.OnSwitchPage += (notebook, args) => {
         //     for (int i = 0; i < EditorNotebook.GetNPages(); i++) {
         //         if (args.Page == EditorNotebook.GetNthPage(i)) {
-        //             window.SetTitle($"{Globals.Languages.ServeTrad("new_file")} - TeXSharp");
+        //             window.SetTitle($"{Globals.Languages.Translate("new_file")} - TeXSharp");
         //             break;
         //         }
         //         else
@@ -26,7 +38,11 @@ public class SourceEditorWrapper {
         // };
     }
 
-    // Simple function to create a tab label for the Notebook pages. It simply returns a box with a label, the name of the file, and a close button (symbol of a cross) to close the tab
+    /// <summary>
+    /// Create a tab label for the Notebook pages. It simply returns a box with a label, the name of the file, and a close button (symbol of a cross) to close the tab.
+    /// </summary>
+    /// <param name="label">The label to put into the notebook tab.</param>
+    /// <returns>Returns a box to put into the tab fo the notebook.</returns>
     public Gtk.Box EditorNotebookTabLabel(string label) {
         // We create the label
         Gtk.Label tabLabel = Gtk.Label.New(label);
@@ -44,16 +60,24 @@ public class SourceEditorWrapper {
         return tabBox;
     }
 
+    /// <summary>
+    /// Creates a new file in a new tab.
+    /// </summary>
+    /// <returns>This method does not return anything.</returns>
     public void NewFile() {
         this.Editors.Add(new SourceEditor());
-        this.EditorNotebook.AppendPage(this.Editors[Editors.Count - 1]._Box, EditorNotebookTabLabel(Globals.Languages.ServeTrad("new_file")));
+        this.EditorNotebook.AppendPage(this.Editors[Editors.Count - 1]._Box, EditorNotebookTabLabel(Globals.Languages.Translate("new_file")));
         this.EditorNotebook.SetTabReorderable(this.Editors[Editors.Count - 1]._Box, true);
         this.EditorNotebook.NextPage();
     }
 
+    /// <summary>
+    /// Open the current file to the specified path.
+    /// </summary>
+    /// <param name="label">The path in which to open the file. It might be null.</param>
+    /// <returns>This method does not return anything.</returns>
     public void OpenFile(string? path) {
-        if (path is null)
-            throw new System.ArgumentNullException("String path is null, cannot open file");
+        Debug.Assert(!(path is null), "String path is null, cannot open file");
         this.Editors.Add(new SourceEditor());
         this.Editors[Editors.Count - 1].OpenFile(path);
         this.EditorNotebook.AppendPage(this.Editors[Editors.Count - 1]._Box, EditorNotebookTabLabel(path.Split('/').Last()));
@@ -61,14 +85,24 @@ public class SourceEditorWrapper {
         this.EditorNotebook.NextPage();
     }
 
+    /// <summary>
+    /// Saves the current file to the specified path.
+    /// </summary>
+    /// <param name="label">The path in which to save the file. It might be null.</param>
+    /// <returns>This method does not return anything.</returns>
     public void SaveFile(string? path) {
-        if (path is null)
-            throw new System.ArgumentNullException("String path is null, cannot save file");
+        Debug.Assert(!(path is null), "String path is null, cannot open file");
         this.Editors[this.GetCurrentEditorIndex()].SaveFile(path);
         this.EditorNotebook.SetTabLabel(this.EditorNotebook.GetNthPage(this.GetCurrentEditorIndex()), EditorNotebookTabLabel(path.Split('/').Last()));
     }
 
+    /// <summary>
+    /// Closes the current file with the tab of the notebook.
+    /// </summary>
+    /// <returns>This method does not return anything.</returns>
     public void CloseFile() {
+        if (this.GetCurrentSourceEditor().GetFileExists())
+            this.GetCurrentSourceEditor().SaveFile(this.GetCurrentSourceEditor().GetPath());
         // We remove the page from the notebook
         // We make sure that we don't close the first tab. We need at least one tab open
         if (this.EditorNotebook.GetNPages() > 1) {
@@ -79,77 +113,123 @@ public class SourceEditorWrapper {
         }
     }
 
-    // Manuals getters and setters
+    // Manual getters
+    /// <summary>
+    /// Gets the current editor index.
+    /// </summary>
+    /// <returns>Returns the current editor index (an integer).</returns>
     public int GetCurrentEditorIndex() {
-        // We get the current page number
-        return this.EditorNotebook.GetCurrentPage();
+        return this.EditorNotebook.GetCurrentPage(); // We get the current page number
     }
+
+    /// <summary>
+    /// Gets the current source editor.
+    /// </summary>
+    /// <returns>Returns the current <c>SourceEditor</c>.</returns>
     public SourceEditor GetCurrentSourceEditor() {
-        // We get the current page number
-        return this.Editors[this.EditorNotebook.GetCurrentPage()];
+        return this.Editors[this.EditorNotebook.GetCurrentPage()]; // We get the current page number
     }
 }
 
+/// <summary>
+/// Represents a single source code editor with VIM mode, collaborative editing, and file operations.
+/// </summary>
 public class SourceEditor {
+    /// <value>The buffer in which is stored the text.</value>
     private GtkSource.Buffer Buffer;
+    /// <value>A wrapper around the buffer.</value>
     public GtkSource.Buffer _Buffer {
-        get { return this.Buffer; } // get method
+        get { return this.Buffer; }
     }
 
+    /// <value>The view in which is shown the text.</value>
     private GtkSource.View View;
+    /// <value>A wrapper around the view.</value>
     public GtkSource.View _View {
-        get { return this.View; } // get method
+        get { return this.View; }
     }
 
+    /// <value>The path to the editor files.</value>
     private string Path;
+    /// <value>A wrapper around the path.</value>
     public string _Path {
         get { return this.Path; }
     }
 
+    /// <value>A boolean to indicate if the file exists on the file system.</value>
     private bool FileExists = false;
+    /// <value>A wrapper around the <c>FileExists</c> attribute.</value>
     public bool _FileExists {
         get { return this.FileExists; }
     }
 
+    /// <value>The <c>LanguageManager</c> which detects the language of the buffer.</value>
     private LanguageManager LanguageManager = GtkSource.LanguageManager.New();
 
+    /// <value>Attribute related to VIM mode.</value>
     private GtkSource.VimIMContext VIMmode = GtkSource.VimIMContext.New();
+    /// <value>Wrapper around attribute related to VIM mode.</value>
     public GtkSource.VimIMContext _VIMmode {
         get { return this.VIMmode; }
     }
+
+    /// <value>Attribute related to VIM mode.</value>
     private Gtk.EventControllerKey VIMeventControllerKey = Gtk.EventControllerKey.New();
+    /// <value>Wrapper around attribute related to VIM mode.</value>
     public Gtk.EventControllerKey _VIMeventControllerKey {
         get { return this.VIMeventControllerKey; }
     }
 
-    // 0 if vim mode is disabled, 1 if vim mode is enabled (default is disabled)
+    /// <value>Boolean to indicate if VIM mode is active into the current editor.</value>
+    /// <remarks><c>false</c> if VIM mode is disabled, <c>true</c> if VIM mode is enabled (default is disabled)</remarks>
     private bool VIMmodeEnabled = false;
+    /// <value>Wrapper around the boolean which indicate if VIM mode is active into the current editor.</value>
     public bool _VIMmodeEnabled {
         get { return this.VIMmodeEnabled; }
         set { this.VIMmodeEnabled = value; }
     }
 
+    /// <value>Entry for the VIM mode.</value>
     private Gtk.Entry TextEntry = new Gtk.Entry();
+    /// <value>Wrapper around the entry for the VIM mode.</value>
     public Gtk.Entry _TextEntry {
         get { return this.TextEntry; }
     }
 
+    /// <value>Scrolling window which will contain the editor.</value>
     private Gtk.ScrolledWindow Scrolled = Gtk.ScrolledWindow.New();
+    /// <value>Wrapper around the scrolling window which will contain the editor.</value>
     public Gtk.ScrolledWindow _Scrolled {
         get { return this.Scrolled; }
     }
 
+    /// <value>Box which will contain the buffer and the netry for the VIM mode.</value>
     private Gtk.Box Box = Gtk.Box.New(Gtk.Orientation.Vertical, 0);
+    /// <value>Wrapper around the box which will contain the buffer and the netry for the VIM mode.</value>
     public Gtk.Box _Box {
         get { return this.Box; }
     }
 
+    /// <value>The client for the WebSocket.</value>
+    /// <remarks>Is null is inactive.</remarks>
     private WSocket.WebSocketClient? WsClient = null;
+
+    /// <value>The server for the WebSocket.</value>
+    /// <remarks>Is null is inactive.</remarks>
     private WSocket.WebSocketServer? WsServer = null;
+
+    /// <value>The parser for real time collaboration receveid messages.</value>
     private WsMessageParser Parser = new WsMessageParser();
+
+    /// <value>A boolean which indicate if we should synchronize the change if we are collaborating.</value>
     private bool SyncChanges = false;
+
+    /// <value>A string containing the old text of the buffer to find the changes and send them throught network.</value>
     private string? OldBufferText = null;
 
+    /// <summary>
+    /// Initializes a new instance of the SourceEditor.
+    /// </summary>
     public SourceEditor() {
         // Second, we create the buffer and the view
         this.Buffer = GtkSource.Buffer.New(null);
@@ -185,24 +265,35 @@ public class SourceEditor {
         };
     }
 
+    /// <summary>
+    /// Resets buffer content for a new file.
+    /// </summary>
+    /// <returns>This method does not return anything.</returns>
     public void NewFile() {
         this.FileExists = false;
         this.Buffer.Text = "";
     }
 
+    /// <summary>
+    /// Loads file contents into the editor.
+    /// </summary>
+    /// <param name="path">The path in which to open the file.</param>
+    /// <returns>This method does not return anything.</returns>
     public void OpenFile(string path) {
-        if (path is null)
-            throw new System.ArgumentNullException("String path is null, cannot open file");
+        Debug.Assert(!(path is null), "String path is null, cannot open file");
         this.SetPath(path);
-
         this.GetBuffer().Text = System.IO.File.ReadAllText(this.GetPath());
         this.SetFileExists(true);
         this.SetBufferLanguage();
     }
 
+    /// <summary>
+    /// Saves buffer contents to a file.
+    /// </summary>
+    /// <param name="path">The path in which to save the file.</param>
+    /// <returns>This method does not return anything.</returns>
     public void SaveFile(string path) {
-        if (path is null)
-            throw new System.ArgumentNullException("String path is null, cannot save file");
+        Debug.Assert(!(path is null), "String path is null, cannot save file");
         if (!this.GetFileExists()) {
             this.SetPath(path);
         }
@@ -212,29 +303,40 @@ public class SourceEditor {
         this.SetBufferLanguage();
     }
 
+    /// <summary>
+    /// Changes the syntax highlighting theme.
+    /// </summary>
+    /// <param name="theme">The theme to apply to the view.</param>
+    /// <returns>This method does not return anything.</returns>
     public void ChangeEditorTheme(string theme) { this.Buffer.SetStyleScheme(GtkSource.StyleSchemeManager.GetDefault().GetScheme(theme)); }
 
-    public async void StartWebSocketServer(int port, Gtk.Label statusBar) {
+    /// <summary>
+    /// Starts a WebSocket server for collaborative editing.
+    /// </summary>
+    /// <param name="port">The port to which to listen.</param>
+    /// <param name="statusBar">The status bar to give feedback to the user.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
+    public async Task StartWebSocketServer(int port, Gtk.Label statusBar) {
         if (!(this.WsServer is null)) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("server_already_started"));
+            statusBar.SetLabel(Globals.Languages.Translate("server_already_started"));
             return;
         }
         if (!(this.WsClient is null)) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + Globals.Languages.ServeTrad("client_already_started"));
+            statusBar.SetLabel(Globals.Languages.Translate("server_did_not_start") + Globals.Languages.Translate("client_already_started"));
             return;
         }
         if (!(this.GetFileExists())) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start") + " " + Globals.Languages.ServeTrad("not_saved"));
+            statusBar.SetLabel(Globals.Languages.Translate("server_did_not_start") + " " + Globals.Languages.Translate("not_saved"));
             return;
         }
         this.WsServer = new WSocket.WebSocketServer(port, this.GetBuffer());
         try {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_start"));
+            statusBar.SetLabel(Globals.Languages.Translate("server_did_start"));
             this.StartSync();
             this.WsServer.MessageReceived += (s, message) => { this.ReceivedMessage(message); };
-            await this.WsServer.StartAsync(statusBar);
+            await this.WsServer.StartAsync();
             if (this.WsServer._Failed) {
-                statusBar.SetLabel(Globals.Languages.ServeTrad("server_did_not_start"));
+                statusBar.SetLabel(Globals.Languages.Translate("server_did_not_start"));
                 this.WsServer = null;
             }
         } catch (Exception e) {
@@ -243,28 +345,40 @@ public class SourceEditor {
         }
     }
 
-    public async void StopWebSocketServer(Gtk.Label statusBar) {
+    /// <summary>
+    /// Stops the WebSocket server.
+    /// </summary>
+    /// <param name="statusBar">The status bar to give feedback to the user.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
+    public async Task StopWebSocketServer(Gtk.Label statusBar) {
         if (this.WsServer is null) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("server_not_started"));
+            statusBar.SetLabel(Globals.Languages.Translate("server_not_started"));
             return;
         }
         await this.WsServer.StopAsync();
         this.WsServer = null;
         this.StopSync();
-        statusBar.SetLabel(Globals.Languages.ServeTrad("server_stoped"));
+        statusBar.SetLabel(Globals.Languages.Translate("server_stoped"));
     }
 
-    public async void StartWebSocketClient(string server, int port, Gtk.Label statusBar) {
+    /// <summary>
+    /// Connects to a collaborative WebSocket server as a client.
+    /// </summary>
+    /// <param name="server">The server to which to connect.</param>
+    /// <param name="port">The port to which to connect.</param>
+    /// <param name="statusBar">The status bar to give feedback to the user.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
+    public async Task StartWebSocketClient(string server, int port, Gtk.Label statusBar) {
         if (!(this.WsClient is null)) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("client_already_started"));
+            statusBar.SetLabel(Globals.Languages.Translate("client_already_started"));
             return;
         }
         if (!(this.WsServer is null)) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_not_start") + Globals.Languages.ServeTrad("server_already_started"));
+            statusBar.SetLabel(Globals.Languages.Translate("client_did_not_start") + Globals.Languages.Translate("server_already_started"));
             return;
         }
         if (this.GetFileExists()) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_not_start") + " " + Globals.Languages.ServeTrad("please_create_new_file"));
+            statusBar.SetLabel(Globals.Languages.Translate("client_did_not_start") + " " + Globals.Languages.Translate("please_create_new_file"));
             return;
         }
         this.WsClient = new WSocket.WebSocketClient($"ws://{server}:{port}/");
@@ -273,30 +387,40 @@ public class SourceEditor {
             this.WsClient.Disconnected += (s, e) => Console.WriteLine("Disconnected from server");
             this.WsClient.MessageReceived += (s, message) => { this.ReceivedMessage(message); };
             this.WsClient.ErrorOccurred += (s, ex) => Console.WriteLine($"Error: {ex.Message}");
-            statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_connect"));
+            statusBar.SetLabel(Globals.Languages.Translate("client_did_connect"));
             await this.WsClient.ConnectAsync();
             this.StartSync();
             this.OldBufferText = this.Buffer.Text;
         } catch (Exception e) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("client_did_not_connect") + " " + e.Message);
+            statusBar.SetLabel(Globals.Languages.Translate("client_did_not_connect") + " " + e.Message);
             this.WsClient.Dispose();
             this.WsClient = null;
             this.StopSync();
         }
     }
 
-    public async void StopWebSocketClient(Gtk.Label statusBar) {
+    /// <summary>
+    /// Disconnects the editor from a WebSocket server.
+    /// </summary>
+    /// <param name="statusBar">The status bar to give feedback to the user.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
+    public async Task StopWebSocketClient(Gtk.Label statusBar) {
         if (this.WsClient is null) {
-            statusBar.SetLabel(Globals.Languages.ServeTrad("client_not_connected"));
+            statusBar.SetLabel(Globals.Languages.Translate("client_not_connected"));
             return;
         }
         await this.WsClient.DisconnectAsync();
         this.WsClient.Dispose();
         this.WsClient = null;
         this.StopSync();
-        statusBar.SetLabel(Globals.Languages.ServeTrad("client_disconnected"));
+        statusBar.SetLabel(Globals.Languages.Translate("client_disconnected"));
     }
 
+    /// <summary>
+    /// Handle the received message.
+    /// </summary>
+    /// <param name="message">The received message.</param>
+    /// <returns>This methods does not return anything.</returns>
     private void ReceivedMessage(string message) {
         var final_message = Parser.ParseMessage(message);
         if (final_message.Type == WsMessageParser.MessageType.FullMessageComplete) {
@@ -325,7 +449,11 @@ public class SourceEditor {
         }
     }
 
-    async private void GetDiffs() {
+    /// <summary>
+    /// Parse the buffer and the attribute <see cref="OldBufferText"/> to get the changes made by the user.
+    /// </summary>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
+    async private Task GetDiffs() {
         if (!this.SyncChanges)
             return;
         string? Text = this.Buffer.Text;
@@ -386,35 +514,97 @@ public class SourceEditor {
         this.OldBufferText = this.Buffer.Text;
     }
 
+    /// <summary>
+    /// Starts the synchronization.
+    /// </summary>
+    /// <returns>This methods does not return anything.</returns>
     private void StartSync() {
         this.SyncChanges = true;
         this.OldBufferText = this.Buffer.Text;
     }
 
+    /// <summary>
+    /// Stops the synchronization.
+    /// </summary>
+    /// <returns>This methods does not return anything.</returns>
     private void StopSync() {
         this.SyncChanges = false;
         this.OldBufferText = null;
     }
 
-    // Manuals Getters and setters
+    // Manual getters and setters
+    /// <summary>
+    /// Gets the current buffer.
+    /// </summary>
+    /// <returns>Returns the current buffer.</returns>
     public GtkSource.Buffer GetBuffer() { return this.Buffer; }
-    // Useless for now. Eventually have a use case for the shortcuts, but it doesn't seem to work right now
+
+    /// <summary>
+    /// Gets the current view.
+    /// </summary>
+    /// <returns>Returns the current view.</returns>
     public GtkSource.View GetView() { return this.View; }
 
+    /// <summary>
+    /// Gets the current file path.
+    /// </summary>
+    /// <returns>Returns the current file path.</returns>
     public string GetPath() { return this.Path; }
+
+    /// <summary>
+    /// Sets the file path.
+    /// </summary>
+    /// <param name="path">The path to set to the source editor.</param>
+    /// <returns>Does not return anything.</returns>
     public void SetPath(string path) { this.Path = path; }
 
+    /// <summary>
+    /// Gets if the file of the editor exists.
+    /// </summary>
+    /// <returns>Returns if the file of the editor exists (a boolean).</returns>
     public bool GetFileExists() { return this.FileExists; }
+
+    /// <summary>
+    /// Sets if the file exists.
+    /// </summary>
+    /// <param name="fileExists">The value to set the attribute to.</param>
+    /// <returns>Does not return anything.</returns>
     public void SetFileExists(bool fileExists) { this.FileExists = fileExists; }
 
+    /// <summary>
+    /// Sets the buffer language automatically with the <c>LanguageManager</c>.
+    /// </summary>
+    /// <returns>Does not return anything.</returns>
     private void SetBufferLanguage() { this.Buffer.Language = this.LanguageManager.GuessLanguage(this.Path, null); }
 
+    /// <summary>
+    /// Gets if VIM mode is enabled.
+    /// </summary>
+    /// <returns>Returns if VIM mode is enabled (a boolean).</returns>
     public bool GetVIMmodeEnabled() { return this.VIMmodeEnabled; }
+
+    /// <summary>
+    /// Sets if VIM mode is enabled.
+    /// </summary>
+    /// <param name="VIMmodeEnabled">The value to set the attribute to.</param>
+    /// <returns>Does not return anything.</returns>
     public void SetVIMmodeEnabled(bool VIMmodeEnabled) { this.VIMmodeEnabled = VIMmodeEnabled; }
 
+    /// <summary>
+    /// Gets the text entry for VIM mode.
+    /// </summary>
+    /// <returns>Returns the entry for the VIM mode.</returns>
     public Gtk.Entry GetTextEntry() { return this.TextEntry; }
 
+    /// <summary>
+    /// Gets the VIM mode context.
+    /// </summary>
+    /// <returns>Returns the VIM mode context.</returns>
     public GtkSource.VimIMContext GetVIMmode() { return this.VIMmode; }
 
+    /// <summary>
+    /// Gets the VIM mode <c>EventControllerKey</c>.
+    /// </summary>
+    /// <returns>Returns the VIM mode <c>EventControllerKey</c>.</returns>
     public Gtk.EventControllerKey GetVIMeventControllerKey() { return this.VIMeventControllerKey; }
 }

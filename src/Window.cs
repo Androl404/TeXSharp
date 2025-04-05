@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Gtk;
 using Gio;
@@ -60,19 +61,19 @@ class Window {
         var HeaderBar = new AppHeaderBar(); // Create the header bar
 
         // TODO: make the menu bar with all the options (file, edit, etc.)
-        HeaderBar.AddMenuButon(Globals.Languages.ServeTrad("file"), false);
-        HeaderBar.AddButtonInMenu([Globals.Languages.ServeTrad("new"), Globals.Languages.ServeTrad("open"), Globals.Languages.ServeTrad("save"), Globals.Languages.ServeTrad("exit")], ["Ctrl+N", "Ctrl+O", "Ctrl+S", ""], [GetFunc("new"), GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
+        HeaderBar.AddMenuButon(Globals.Languages.Translate("file"), false);
+        HeaderBar.AddButtonInMenu([Globals.Languages.Translate("new"), Globals.Languages.Translate("open"), Globals.Languages.Translate("save"), Globals.Languages.Translate("exit")], ["Ctrl+N", "Ctrl+O", "Ctrl+S", ""], [GetFunc("new"), GetFunc("open"), GetFunc("save"), GetFunc("quit")], false, true);
 
         HeaderBar.AddMenuButon("LaTeX", false);
-        HeaderBar.AddButtonInMenu([Globals.Languages.ServeTrad("compile")], ["Ctrl+Shift+C"], [GetFunc("compile")], false, true);
+        HeaderBar.AddButtonInMenu([Globals.Languages.Translate("compile")], ["Ctrl+Shift+C"], [GetFunc("compile")], false, true);
 
-        HeaderBar.AddMenuButon(Globals.Languages.ServeTrad("tools"), false);
-        HeaderBar.AddButtonInMenu([Globals.Languages.ServeTrad("settings")], ["Ctrl+Shift+P"], [GetFunc("toogle_settings")], false, true);
+        HeaderBar.AddMenuButon(Globals.Languages.Translate("tools"), false);
+        HeaderBar.AddButtonInMenu([Globals.Languages.Translate("settings")], ["Ctrl+Shift+P"], [GetFunc("toogle_settings")], false, true);
 
         // The names of the available icons can be found with `gtk4-icon-browser`, or in /usr/share/icons/
         var button_icon = Gio.ThemedIcon.New("open-menu-symbolic"); // We create an image with an icon
         HeaderBar.AddMenuButon(button_icon, false);
-        HeaderBar.AddButtonInMenu([Globals.Languages.ServeTrad("about")], [""], [GetFunc("about")], false, false);
+        HeaderBar.AddButtonInMenu([Globals.Languages.Translate("about")], [""], [GetFunc("about")], false, false);
         HeaderBar.SetWindowHeaderBar(window);
     }
 
@@ -130,8 +131,7 @@ class Window {
         // We remove whatever is in the grid before showing the PDF
         if (Globals.Settings.GetShowing()) {
             var Func = this.GetFunc("toogle_settings");
-            if (Func is null)
-                throw new System.ArgumentNullException("Function is null");
+            Debug.Assert(!(Func is null), "Function is null");
             await Func(null, new EventArgs());
         }
 
@@ -151,27 +151,27 @@ class Window {
     public void MakeButtonBar() {
         this.ButtonBar.AddButton("new", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-new-symbolic")), GetFunc("new"));
         // We set the widget to the window so that it is possible to use the shortcut even if not focusing the editor view
-        this.ButtonBar.AddShortcut(this.MWindow, "<Control>N", "newFileAction", GetFunc("new"), this.Sender);
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control>N", "newFileAction", GetFunc("new"), this.MWindow);
 
         this.ButtonBar.AddButton("save", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-save-symbolic")), GetFunc("save"));
         // In this case, we set the widget to the editor view so that the shortcut is only available when focusing the editor view. (we don't want to save the file when we are not focusing the editor, right? (it can be slow))
         // EDIT : It actually depends, it works on new file, but seem to not work on opened file. Stricking to window for now.
-        this.ButtonBar.AddShortcut(this.EditorWrapper._EditorNotebook, "<Control>S", "saveAction", GetFunc("save"), this.Sender);
+        this.ButtonBar.AddShortcut(this.EditorWrapper._EditorNotebook, "<Control>S", "saveAction", GetFunc("save"), this.MWindow);
 
         this.ButtonBar.AddButton("open", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("document-open-symbolic")), GetFunc("open"));
-        this.ButtonBar.AddShortcut(this.MWindow, "<Control>O", "openAction", GetFunc("open"), this.Sender);
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control>O", "openAction", GetFunc("open"), this.MWindow);
 
         this.ButtonBar.AddButton("close", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("window-close-symbolic")), GetFunc("close"));
-        this.ButtonBar.AddShortcut(this.MWindow, "<Control>W", "closeAction", GetFunc("close"), this.Sender);
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control>W", "closeAction", GetFunc("close"), this.MWindow);
 
         this.ButtonBar.AddButton("compile", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("media-playback-start-symbolic")), GetFunc("compile"));
-        this.ButtonBar.AddShortcut(this.MWindow, "<Control><Shift>C", "compileAction", GetFunc("compile"), this.Sender);
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control><Shift>C", "compileAction", GetFunc("compile"), this.MWindow);
 
         this.ButtonBar.AddButton("vim", Gtk.Image.NewFromFile("./assets/vimlogo.png"), GetFunc("vim"));
-        this.ButtonBar.AddShortcut(this.MWindow, "<Control><Shift>V", "vimAction", GetFunc("vim"), this.Sender);
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control><Shift>V", "vimAction", GetFunc("vim"), this.MWindow);
 
         this.ButtonBar.AddButton("settings", Gtk.Image.NewFromGicon(Gio.ThemedIcon.New("applications-system-symbolic")), GetFunc("toogle_settings"));
-        this.ButtonBar.AddShortcut(this.MWindow, "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.Sender);
+        this.ButtonBar.AddShortcut(this.MWindow, "<Control><Shift>P", "toogle_settingsAction", GetFunc("toogle_settings"), this.MWindow);
 
         this.ButtonBar.AddStatusBar();
         this.Grid.Attach(this.ButtonBar.GetBox(), 0, 0, 2, 1); // Spans 2 columns in the third row
@@ -181,7 +181,7 @@ class Window {
         var FuncOpen = async (object? sender, EventArgs args) => {
             var OpenDialog = Gtk.FileDialog.New();
             try {
-                OpenDialog.SetTitle(Globals.Languages.ServeTrad("choose_file"));
+                OpenDialog.SetTitle(Globals.Languages.Translate("choose_file"));
                 var OpenTask = OpenDialog.OpenAsync(this.MWindow);
                 await OpenTask;
                 if (OpenTask.Result is null)
@@ -191,7 +191,7 @@ class Window {
                 // this.Grid.Attach(this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry(), 0, 2, 1, 1);
                 this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry().Hide();
 
-                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("file_opened") + " " + OpenTask.Result.GetPath() + ".");
+                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.Translate("file_opened") + " " + OpenTask.Result.GetPath() + ".");
             } catch (Exception e) {
                 Console.WriteLine("WARNING: Dismissed by user\n" + e.StackTrace);
             } finally {
@@ -205,7 +205,7 @@ class Window {
             var SaveDialog = Gtk.FileDialog.New();
             try {
                 if (!this.EditorWrapper.GetCurrentSourceEditor().GetFileExists()) {
-                    SaveDialog.SetTitle(Globals.Languages.ServeTrad("save_file"));
+                    SaveDialog.SetTitle(Globals.Languages.Translate("save_file"));
                     var SaveTask = SaveDialog.SaveAsync(this.MWindow);
                     await SaveTask;
                     if (SaveTask.Result is null)
@@ -215,7 +215,7 @@ class Window {
                     this.EditorWrapper.SaveFile(this.EditorWrapper.GetCurrentSourceEditor().GetPath());
                 }
                 this.MWindow.SetTitle($"{this.EditorWrapper.GetCurrentSourceEditor().GetPath()} - TeXSharp");
-                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("file_saved") + " " + this.EditorWrapper.GetCurrentSourceEditor().GetPath() + ".");
+                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.Translate("file_saved") + " " + this.EditorWrapper.GetCurrentSourceEditor().GetPath() + ".");
             } catch (Exception e) {
                 Console.WriteLine($"WARNING: Dismissed by user, {e.Message} \n" + e.StackTrace);
             } finally {
@@ -228,8 +228,8 @@ class Window {
             // The only way to add the TextEntry to the editor is here. Otherwise, SourceEditor class can't access the grid
             // this.Grid.Attach(this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry(), 0, 2, 1, 1);
             this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry().Hide();
-            this.MWindow.SetTitle($"{Globals.Languages.ServeTrad("new_file")} - TeXSharp");
-            this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("new_file") + " " + Globals.Languages.ServeTrad("created") + ".");
+            this.MWindow.SetTitle($"{Globals.Languages.Translate("new_file")} - TeXSharp");
+            this.ButtonBar._StatusBar.SetLabel(Globals.Languages.Translate("new_file") + " " + Globals.Languages.Translate("created") + ".");
         };
 
         var FuncClose = async (object? sender, EventArgs args) => {
@@ -249,15 +249,15 @@ class Window {
         var FuncCompile = async (object? sender, EventArgs args) => {
             await FuncSave(sender, args);
             if (this.EditorWrapper.GetCurrentSourceEditor().GetFileExists()) {
-                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("compilation_started") + "...");
+                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.Translate("compilation_started") + "...");
                 var Process = await ProcessAsyncHelper.ExecuteShellCommand("latexmk", "-pdf -bibtex -interaction=nonstopmode -cd " + this.EditorWrapper.GetCurrentSourceEditor().GetPath(), 50000);
                 if (Process.ExitCode == 0)
-                    this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("compilation_finished") + ".");
+                    this.ButtonBar._StatusBar.SetLabel(Globals.Languages.Translate("compilation_finished") + ".");
                 else
-                    this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("compilation_finished") + " " + Globals.Languages.ServeTrad("with_errors") + ".");
+                    this.ButtonBar._StatusBar.SetLabel(Globals.Languages.Translate("compilation_finished") + " " + Globals.Languages.Translate("with_errors") + ".");
                 this.PDFViewer = await this.MakePDFViewer(this.EditorWrapper.GetCurrentSourceEditor().GetPath()[..^ 3] + "pdf");
             } else {
-                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.ServeTrad("not_saved_cannot_compile"));
+                this.ButtonBar._StatusBar.SetLabel(Globals.Languages.Translate("not_saved_cannot_compile"));
             }
         };
 
@@ -268,7 +268,7 @@ class Window {
                 this.EditorWrapper.GetCurrentSourceEditor().GetView().RemoveController(this.EditorWrapper.GetCurrentSourceEditor().GetVIMeventControllerKey());
                 this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry().Hide();
                 this.EditorWrapper.GetCurrentSourceEditor().SetVIMmodeEnabled(false);
-                this.ButtonBar._StatusBar.SetLabel("VIM Mode " + Globals.Languages.ServeTrad("desactivated") + ".");
+                this.ButtonBar._StatusBar.SetLabel("VIM Mode " + Globals.Languages.Translate("desactivated") + ".");
             } else {
                 // If the VIM mode is disabled (0), we enable it
                 this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry().Show();
@@ -287,7 +287,7 @@ class Window {
                 this.EditorWrapper.GetCurrentSourceEditor().GetVIMmode().BindProperty("command-text", this.EditorWrapper.GetCurrentSourceEditor().GetTextEntry(), "text", 0);
 
                 this.EditorWrapper.GetCurrentSourceEditor().SetVIMmodeEnabled(true);
-                this.ButtonBar._StatusBar.SetLabel("VIM Mode " + Globals.Languages.ServeTrad("activated") + ".");
+                this.ButtonBar._StatusBar.SetLabel("VIM Mode " + Globals.Languages.Translate("activated") + ".");
             }
         };
 

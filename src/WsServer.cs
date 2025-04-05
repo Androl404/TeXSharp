@@ -7,19 +7,41 @@ using System.Threading;
 using System.Threading.Tasks;
 using Gtk;
 
+// We use a custom namespace for WebSocket classes
 namespace WSocket;
 
+/// <summary>
+/// Represents a WebSocket server that handles incoming WebSocket connections,
+/// manages connected clients, and facilitates message broadcasting between them.
+/// </summary>
 public class WebSocketServer {
+    /// <value>String containing the IPs to listen to.</value>
     private readonly string ip;
+    /// <value>Port to listen to.</value>
     private readonly int port;
+    /// <value><c>HttpListener</c> which listens from the standard library.</value>
     private readonly HttpListener listener;
+    /// <value>Cancellation token source from the standard library.</value>
     private readonly CancellationTokenSource serverCancellation;
+    /// <value>Dictionnary with all the web-sockets clients (<c>Guid</c> is the key).</value>
     private readonly ConcurrentDictionary<Guid, WebSocket> clients;
+    /// <value>Dictionnary with all the state of the clients (<c>Guid</c> is the key).</value>
     private readonly ConcurrentDictionary<Guid, string> clientStates;
+    /// <value>Buffer to which the server is linked.</value>
     private readonly GtkSource.Buffer editor_buffer;
+
+    /// <value>Event raised when a message is received from any connected client.</value>
     public event EventHandler<string> MessageReceived;
+
+    /// <value>Indicates whether the server has failed during startup. </value>
     public bool _Failed = false;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WebSocketServer"/> class. This is the constructor.
+    /// </summary>
+    /// <param name="port">The port number to listen on.</param>
+    /// <param name="editor_buffer">The GTK text buffer to send to clients on connect.</param>
+    /// <param name="ip">The IP address to bind to (default is wildcard).</param>
     public WebSocketServer(int port, GtkSource.Buffer editor_buffer, string ip = "*") {
         this.ip = ip;
         this.port = port;
@@ -31,7 +53,11 @@ public class WebSocketServer {
         this.editor_buffer = editor_buffer;
     }
 
-    public async Task StartAsync(Gtk.Label statusBar) {
+    /// <summary>
+    /// Starts the WebSocket server and listens for incoming connections.
+    /// </summary>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
+    public async Task StartAsync() {
         try {
             listener.Start();
             Console.WriteLine($"Server started on {ip}:{port}");
@@ -52,7 +78,12 @@ public class WebSocketServer {
         }
     }
 
-    private async void ProcessWebSocketRequest(HttpListenerContext context) {
+    /// <summary>
+    /// Accepts and processes a new WebSocket client request.
+    /// </summary>
+    /// <param name="context">The HTTP listener context containing the WebSocket request.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
+    private async Task ProcessWebSocketRequest(HttpListenerContext context) {
         try {
             var webSocketContext = await context.AcceptWebSocketAsync(null);
             var webSocket = webSocketContext.WebSocket;
@@ -70,6 +101,12 @@ public class WebSocketServer {
         }
     }
 
+    /// <summary>
+    /// Handles the message loop for a connected WebSocket client.
+    /// </summary>
+    /// <param name="clientId">Unique identifier for the client.</param>
+    /// <param name="webSocket">The WebSocket associated with the client.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
     private async Task HandleClientSession(Guid clientId, WebSocket webSocket) {
         var buffer = new byte[4096];
         try {
@@ -79,7 +116,6 @@ public class WebSocketServer {
 
                     if (result.MessageType == WebSocketMessageType.Close) {
                         await HandleClientDisconnection(clientId, true);
-                        // break;
                     }
 
                     if (result.MessageType == WebSocketMessageType.Text) {
@@ -87,13 +123,11 @@ public class WebSocketServer {
                         await HandleMessage(clientId, message);
                     }
                 } catch (WebSocketException wsEx) when (wsEx.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely || webSocket.State != WebSocketState.Open) {
-                    // Handle abrupt client disconnection
                     await HandleClientDisconnection(clientId, false);
                     break;
                 }
             }
         } catch (OperationCanceledException) {
-            // Server is shutting down
             await HandleClientDisconnection(clientId, false);
         } catch (Exception ex) {
             Console.WriteLine($"Client {clientId} session error: {ex.Message}");
@@ -101,34 +135,41 @@ public class WebSocketServer {
         }
     }
 
+    /// <summary>
+    /// Processes a message received from a client and broadcasts it to all other clients.
+    /// </summary>
+    /// <param name="senderId">The ID of the client that sent the message.</param>
+    /// <param name="message">The message content.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
     private async Task HandleMessage(Guid senderId, string message) {
-        // Console.WriteLine($"Received from {senderId}: {message}");
         MessageReceived?.Invoke(this, message);
 
-        // Example: Broadcast message to all other clients
         foreach (var client in clients) {
             if (client.Key != senderId && client.Value.State == WebSocketState.Open) {
                 try {
                     var bytes = Encoding.UTF8.GetBytes(message);
                     await client.Value.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, serverCancellation.Token);
                 } catch (WebSocketException) {
-                    // Handle failed message delivery by removing the client
                     await HandleClientDisconnection(client.Key, false);
                 }
             }
         }
     }
 
+    /// <summary>
+    /// Handles cleanup and removal of a disconnected client.
+    /// </summary>
+    /// <param name="clientId">The client's unique identifier.</param>
+    /// <param name="isGraceful">True if disconnection was expected; otherwise false.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
     private async Task HandleClientDisconnection(Guid clientId, bool isGraceful) {
         if (clients.TryRemove(clientId, out var webSocket)) {
             try {
                 if (webSocket.State == WebSocketState.Open && isGraceful) {
-                    // Only try graceful shutdown if the connection is still
-                    // open
                     await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server closing connection", CancellationToken.None);
                 }
             } catch (WebSocketException) {
-                // Ignore websocket errors during shutdown
+                // Ignore errors
             } finally {
                 clientStates.TryRemove(clientId, out _);
                 Console.WriteLine($"Client {clientId} disconnected {(isGraceful ? "gracefully" : "abruptly")}");
@@ -136,14 +177,15 @@ public class WebSocketServer {
         }
     }
 
+    /// <summary>
+    /// Stops the WebSocket server and gracefully disconnects all clients.
+    /// </summary>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
     public async Task StopAsync() {
         try {
             serverCancellation.Cancel();
 
-            // Close all client connections
             var disconnectionTasks = clients.Keys.Select(clientId => HandleClientDisconnection(clientId, true));
-
-            // Wait for all clients to disconnect with timeout
             await Task.WhenAll(disconnectionTasks).WaitAsync(TimeSpan.FromSeconds(5));
 
             listener.Stop();
@@ -153,6 +195,11 @@ public class WebSocketServer {
         }
     }
 
+    /// <summary>
+    /// Broadcasts a message to all connected clients.
+    /// </summary>
+    /// <param name="message">The message to broadcast.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
     public async Task BroadcastMessage(string message) {
         var buffer = Encoding.UTF8.GetBytes(message);
         var failedClients = new List<Guid>();
@@ -169,12 +216,17 @@ public class WebSocketServer {
             }
         }
 
-        // Clean up any failed clients
         foreach (var clientId in failedClients) {
             await HandleClientDisconnection(clientId, false);
         }
     }
 
+    /// <summary>
+    /// Sends a message to a specific connected client.
+    /// </summary>
+    /// <param name="clientId">The ID of the client to send the message to.</param>
+    /// <param name="message">The message to send.</param>
+    /// <returns>This methods does return a task because it is asynchronous.</returns>
     public async Task BroadcastMessageToClient(Guid clientId, string message) {
         var buffer = Encoding.UTF8.GetBytes(message);
         var failedClients = new List<Guid>();
